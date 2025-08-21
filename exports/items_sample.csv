@@ -1,0 +1,51 @@
+id,value,type,hsk_level,components,is_contained_in,constituent_items,radicals_contained,stroke_count,display_pinyin,pinyin,english_definition,kinds
+1,丁,character,,"{一,亅}","{庁,飣,钉,订,邒,奵,疔,矴,仃,釘,忊,酊,訂,町,寧,打,成,頂,玎,盯,灯,朾,厅,予,饤,亭,虰,靪,閅,糽,可,帄,顶,艼,耓,叮,宁,甼,圢,耵,汀}",,,2,,ding1,,"{character,radical}"
+2,丆,character,,"{丿,一}","{頁,页,靣}",,,2,,daan1,,"{character,radical}"
+3,三,character,1,"{二,一}","{弎,畺,叄,仨,兰,闫,閆,叁}",{三},,3,sān,saam1,det.: three,"{character,word,radical}"
+4,下,character,1,"{一,卜}","{閇,雫,芐,颪,乤,吓,梺,虾,疜,圷,忑}",{下},,3,xià,haa6,under (condition/fact etc.),"{character,word,radical}"
+5,丒,character,,"{刃,一}",,,,4,,ng5,,{character}
+6,丕,character,,"{不,一}","{駓,豾,呸,邳,柸,秠,伾,鉟,岯,狉,魾,蚽,胚,坯,噽,髬,抷,怌,苤}",,,5,,pei1,,"{character,radical}"
+7,丙,character,,"{一,内}","{鈵,苪,昺,氞,鞆,蛃,窉,抦,邴,昞,陃,炳,病,怲,柄,眪}",,,5,,bing2,,"{character,radical}"
+8,丛,character,,"{一,人}",,,,5,,cung4,,{character}
+9,丞,character,,"{氶,一}","{脀,巹,拯,卺,洆,烝}",,,6,,sing4,,"{character,radical}"
+10,丟,character,,"{厶,王}",,,,6,,diu1,,{character}
+11,丠,character,,"{一,北}",,,,6,,kei3,,{character}
+12,丢,character,,"{厶,壬}","{铥,銩}",,,6,,diu1,,"{character,radical}"
+13,並,character,,"{亚,丷}","{碰,椪,湴,踫,掽,諩,普}",,,8,,bing6,,"{character,radical}"
+14,丩,character,,{丨},"{鼼,赳,収,觓,訆,糾,虯,叫,朻,收,嘂,舏,临,纠}",,,2,,gau2,,"{character,radical}"
+15,个,character,1,"{丨,人}",,{个},,3,gè,go3,"piece, item","{character,word}"
+16,丬,character,,"{冫,丨}","{状,妆,壮,将}",,,3,,baan6,,"{character,radical}"
+17,中,character,1,"{口,丨}","{鈡,祌,迚,仲,狆,妕,忠,翀,忡,訲,冲,衶,沖,馽,蚛,钟,舯,种,衷,盅,肿}",{中},,4,zhōng,zung1,"center, middle, interior","{character,word,radical}"
+18,丮,character,,"{㐄,乁}",{谻},,,4,,gik1,,"{character,radical}"
+19,丯,character,,"{彡,丨}",,,,4,,gaai3,,{character}
+20,串,character,,"{吕,丨}","{窜,梙,賗,患,鋛,丳}",,,7,,cyun3,,"{character,radical}"
+21,丳,character,,"{串,丿}",,,,8,,caan2,,{character}
+22,临,character,,{丩},,,,9,,lam4,,{character}
+23,丵,character,,{业},"{對,凿}",,,10,,zok6,,"{character,radical}"
+24,丸,character,,"{九,丶}","{訙,奿,孰,執,笂,埶,紈,芄,肒,纨,犱,釻,秇,汍,执,骫}",,,3,,jyun4,,"{character,radical}"
+25,为,character,,"{力,丷}","{伪,沩,妫}",,,4,,wai4,,"{character,radical}"
+26,主,character,,"{丶,王}","{柱,殶,砫,鉒,炷,住,黈,䇠,疰,駐,註,軴,拄,跓,往,蛀,驻,宔,罜,飳,麈,紸,妵,迬,注}",,,5,,zyu2,,"{character,radical}"
+27,丼,character,,"{丶,井}",,,,5,,zeng2,,{character}
+28,丽,character,,{一},"{麗,彨,鹂,逦,郦,酾,鲡,骊,婯,俪}",,,7,,lai6,,"{character,radical}"
+29,举,character,,"{㐄,兴}",{榉},,,9,,geoi2,,"{character,radical}"
+30,乇,character,,"{丿,七}","{仛,託,托,虴,魠,秅,杔,馲,厇,亳,圫,吒,㡯,汑,宅,奼,飥,籷,讬,饦,灹,矺}",,,3,,tok3,,"{character,radical}"
+31,么,character,,"{丿,厶}","{庅,麽,仫}",,,3,,maa1,,"{character,radical}"
+32,义,character,,"{丶,乂}","{仪,议,蚁,肞,紁,舣}",,,3,,ji6,,"{character,radical}"
+33,乊,character,,"{丿,丷}",{乥},,,3,,fu4,,"{character,radical}"
+34,乏,character,,"{丿,之}","{泛,覂,鴔,贬,貶,抸,疺,眨,砭,窆,姂,柉}",,,4,,fat6,,"{character,radical}"
+35,乒,character,,"{丘,丿}",,,,6,,bing1,,{character}
+36,乓,character,,"{丘,丶}",,,,6,,bam1,,{character}
+37,乔,character,,"{丿,夰}","{硚,骄,矫,挢,荞,侨,鞒,桥,峤,娇,轿}",,,6,,kiu4,,"{character,radical}"
+38,乕,character,,"{厈,卩}",{逓},,,7,,fu2,,"{character,radical}"
+39,乖,character,,"{千,北}",,,,8,,gwaai1,,{character}
+40,乗,character,,"{禾,廿}",{剰},,,9,,sing4,,"{character,radical}"
+41,乘,character,,"{北,禾}","{塖,溗,騬,嵊,剩}",,,10,,sing4,,"{character,radical}"
+42,乞,character,,{乙},"{刉,乾,盵,阣,虼,亁,扢,麧,讫,圪,仡,屹,迄,籺,杚,釳,龁,訖,疙,汔,趷,紇,吃,纥,矻,犵,齕,肐,忔}",,,3,,hat1,,"{character,radical}"
+43,也,character,1,"{乜,丨}","{施,貤,虵,驰,弛,匜,池,他,㐌,扡,祂,灺,阤,地,肔,迆,毑,杝,訑,竾,馳,酏,忚,吔,衪,乸,彵,釶,牠,髢,她}",{也},,3,yě,jaa5,"also, too, as well, either, even","{character,word,radical}"
+44,乢,character,,"{乚,山}",,,,4,,goi3,,{character}
+45,乣,character,,"{乚,幺}",,,,4,,gau2,,{character}
+46,乤,character,,"{乙,下}",,,,4,,haa6,,{character}
+47,乥,character,,"{乙,乊}",,,,4,,fu4,,{character}
+48,乧,character,,"{乙,斗}",,,,5,,dau2,,{character}
+49,乨,character,,"{台,乚}",,,,6,,ci2,,{character}
+50,乩,character,,"{乚,占}",,,,6,,gei1,,{character}
