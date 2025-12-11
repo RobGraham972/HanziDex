@@ -74,7 +74,7 @@ app.use(cors({
 }));
 
 // Serve stroke/data files under /data
-app.use('/data', express.static(path.join(__dirname, '../data')));
+app.use('/data', express.static(path.join(__dirname, 'data')));
 
 // Request logger
 app.use((req, res, next) => {

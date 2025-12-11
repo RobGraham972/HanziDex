@@ -11,7 +11,7 @@ const pool = new Pool({
     port: process.env.DB_PORT,
 });
 
-const TSV_PATH = path.join(__dirname, '../data/00_hsk/HSK_all_merged.tsv');
+const TSV_PATH = path.join(__dirname, 'data/00_hsk/HSK_all_merged.tsv');
 
 async function seed() {
     console.log('Connecting to database...');
