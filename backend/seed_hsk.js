@@ -3,13 +3,17 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const fs = require('fs');
 const { Pool } = require('pg');
 
-const pool = new Pool({
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_NAME,
-    password: process.env.DB_PASSWORD,
-    port: process.env.DB_PORT,
-});
+const pool = new Pool(
+    process.env.DATABASE_URL
+        ? { connectionString: process.env.DATABASE_URL }
+        : {
+            user: process.env.DB_USER,
+            host: process.env.DB_HOST,
+            database: process.env.DB_NAME,
+            password: process.env.DB_PASSWORD,
+            port: process.env.DB_PORT,
+        }
+);
 
 const TSV_PATH = path.join(__dirname, 'data/00_hsk/HSK_all_merged.tsv');
 

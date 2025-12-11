@@ -85,13 +85,17 @@ app.use((req, res, next) => {
 // ----------------------------------------------------
 // PostgreSQL Database Connection Pool
 // ----------------------------------------------------
-const pool = new Pool({
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_NAME,
-    password: process.env.DB_PASSWORD,
-    port: process.env.DB_PORT,
-});
+const pool = new Pool(
+    process.env.DATABASE_URL
+        ? { connectionString: process.env.DATABASE_URL }
+        : {
+            user: process.env.DB_USER,
+            host: process.env.DB_HOST,
+            database: process.env.DB_NAME,
+            password: process.env.DB_PASSWORD,
+            port: process.env.DB_PORT,
+        }
+);
 
 // --- Helper function for updating status in user_item_progress ---
 async function updateItemStatus(client, userId, itemId, newStatus) {
