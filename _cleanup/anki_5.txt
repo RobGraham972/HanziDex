@@ -1,0 +1,32 @@
+What is the definition of the derivative of a function \(f\) at a point \(a\), denoted \(f'(a)\)?	The derivative is the limit of the difference quotient, defined as \(f'(a) = \lim_{h \to 0} \frac{f(a+h) - f(a)}{h}\), provided the limit exists.
+State the product rule for differentiating the product of two functions, \(f(x)\) and \(g(x)\).	The derivative of \((fg)(x)\) is given by \(\frac{d}{dx}(fg)(x) = f'(x)g(x) + f(x)g'(x)\).
+If a function \(f\) is differentiable at a point \(a\), what can be said about its continuity at that point?	If a function is differentiable at a point \(a\), then it must also be continuous at \(a\).
+State the chain rule for differentiating a composite function \(F(x) = g(f(x))\).	The derivative is \(F'(x) = g'(f(x))f'(x)\), or in Leibniz notation, \(\frac{dy}{dx} = \frac{dy}{du}\frac{du}{dx}\).
+What is the derivative of the natural logarithm function, \(\frac{d}{dx} \log(f(x))\), for a positive, differentiable function \(f(x)\)?	The derivative is \(\frac{f'(x)}{f(x)}\).
+What is the equation of the tangent line to the curve \(y=f(x)\) at the point \((a, b)\) where \(b=f(a)\)?	The equation of the tangent is \(y - b = f'(a)(x-a)\).
+State the quotient rule for differentiating a function of the form \(\frac{f(x)}{g(x)}\).	The derivative is \(\frac{f'(x)g(x) - f(x)g'(x)}{[g(x)]^2}\), provided \(g(x) \neq 0\).
+What is the derivative of the exponential function \(e^{ax}\) with respect to \(x\)?	The derivative is \(ae^{ax}\).
+State the inverse function rule for differentiation, relating \(\frac{dy}{dx}\) and \(\frac{dx}{dy}\).	The rule is \(\frac{dy}{dx} = 1 / \frac{dx}{dy}\).
+What is the derivative of \(\sin(ax)\) with respect to \(x\)?	The derivative is \(a \cos(ax)\).
+What is the derivative of \(\cos(ax)\) with respect to \(x\)?	The derivative is \(-a \sin(ax)\).
+What is the derivative of \(\tan(ax)\) with respect to \(x\)?	The derivative is \(a \sec^2(ax)\).
+What is the derivative of the hyperbolic sine function, \(\sinh(x)\)?	The derivative is \(\cosh(x)\).
+What is the derivative of the hyperbolic cosine function, \(\cosh(x)\)?	The derivative is \(\sinh(x)\).
+The technique of differentiating \(\log(f(x))\) to find \(f'(x)\) is known as _____ differentiation.	logarithmic
+What is the second derivative of a function \(f(x)\), denoted \(f''(x)\)?	The second derivative is the derivative of the first derivative, i.e., \(f''(x) = \frac{d}{dx}(f'(x))\).
+In dynamics, if \(f(x)\) represents the distance travelled by an object at time \(x\), what do the first and second derivatives, \(f'(x)\) and \(f''(x)\), represent?	\(f'(x)\) represents the instantaneous velocity, and \(f''(x)\) represents the instantaneous acceleration.
+State l'Hôpital's rule for evaluating the limit of a quotient \(\frac{f(x)}{g(x)}\) as \(x \to a\).	If \(\lim_{x \to a} f(x) = \lim_{x \to a} g(x) = 0\) (or \(\pm\infty\)), then \(\lim_{x \to a} \frac{f(x)}{g(x)} = \lim_{x \to a} \frac{f'(x)}{g'(x)}\), provided the latter limit exists.
+Using the chain rule, find the derivative of \(\sin^3(x)\).	The derivative is \(3\sin^2(x)\cos(x)\).
+Using the chain rule, find the derivative of \(e^{-x^2}\).	The derivative is \(-2xe^{-x^2}\).
+A point \(a\) in the domain of \(f\) is a stationary point if _____.	\(f'(a) = 0\)
+What is the test for a local minimum at a stationary point \(a\) using the second derivative?	If \(f'(a) = 0\) and \(f''(a) > 0\), then \(f\) has a local minimum at \(a\).
+What is the test for a local maximum at a stationary point \(a\) using the second derivative?	If \(f'(a) = 0\) and \(f''(a) < 0\), then \(f\) has a local maximum at \(a\).
+Use l'Hôpital's rule to evaluate \(\lim_{x \to 0} \frac{\sin x}{x}\).	The limit is \(\lim_{x \to 0} \frac{\cos x}{1} = \cos(0) = 1\).
+What is the purpose of logarithmic differentiation?	It is used to differentiate functions that involve products, quotients, or powers, such as \(y=x^x\), by first taking the natural logarithm of the function.
+Find the derivative of \(y=x^x\).	Using logarithmic differentiation, \(\frac{dy}{dx} = x^x(1 + \log x)\).
+If a stationary point at \(x=a\) has \(f'(a)=0\) and \(f''(a)=0\), but \(f'''(a) \neq 0\), what is the nature of the stationary point?	The point is a point of inflection.
+Find the stationary points of \(f(x) = x \log x\) for \(x>0\).	\(f'(x) = \log x + 1 = 0\), so the stationary point occurs at \(x=e^{-1} = 1/e\).
+State l'Hôpital's rule for evaluating the limit of a quotient \(\frac{f(x)}{g(x)}\) as \(x \to a\).	If \(\lim_{x \to a} f(x) = \lim_{x \to a} g(x) = 0\) (or \(\pm\infty\)), then \(\lim_{x \to a} \frac{f(x)}{g(x)} = \lim_{x \to a} \frac{f'(x)}{g'(x)}\), provided the limit on the right side exists.
+Use l'Hôpital's rule to evaluate the limit \(\lim_{x \to 0} \frac{\sin x}{x}\).	This is a \(\frac{0}{0}\) indeterminate form. Applying the rule gives \(\lim_{x \to 0} \frac{\frac{d}{dx}(\sin x)}{\frac{d}{dx}(x)} = \lim_{x \to 0} \frac{\cos x}{1} = \cos(0) = 1\).
+Use l'Hôpital's rule to evaluate the limit \(\lim_{x \to \infty} \frac{\log x}{x}\).	This is an \(\frac{\infty}{\infty}\) indeterminate form. Applying the rule gives \(\lim_{x \to \infty} \frac{\frac{d}{dx}(\log x)}{\frac{d}{dx}(x)} = \lim_{x \to \infty} \frac{1/x}{1} = 0\).
+How would you set up the limit \(\lim_{x \to 0^+} x \log x\) to apply l'Hôpital's rule?	You must first rewrite it as a quotient that gives an indeterminate form, such as \(\lim_{x \to 0^+} \frac{\log x}{1/x}\), which is of the form \(\frac{-\infty}{\infty}\).

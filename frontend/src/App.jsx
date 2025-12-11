@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './context/AuthContext.jsx';
 import './App.css';
 import HanziModal from './components/HanziModal.jsx';
+import SearchRecommender from './components/SearchRecommender.jsx';
+import CollectorsBook from './components/CollectorsBook.jsx';
+import AddWordModal from './components/AddWordModal.jsx';
 import { api } from './utils/api.js';
 import { hasKind, kindLabel } from './utils/itemKinds.js';
 
@@ -24,10 +27,16 @@ function App() {
   const [trainerIdx, setTrainerIdx] = useState(0);
   const [trainerPaused, setTrainerPaused] = useState(false);
   const [trainerRevealed, setTrainerRevealed] = useState(false);
-  const [reducedMotion] = useState(false);
-  const [highContrast] = useState(false);
+  const [reducedMotion, _setReducedMotion] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('reducedMotion') || 'false'); } catch { return false; }
+  });
+  const [highContrast, _setHighContrast] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('highContrast') || 'false'); } catch { return false; }
+  });
   const [showPrefs, setShowPrefs] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [showBook, setShowBook] = useState(false);
+  const [showAddWord, setShowAddWord] = useState(false);
   const [prefsLoading, setPrefsLoading] = useState(false);
   const [prefsSaving, setPrefsSaving] = useState(false);
   const [prefsError, setPrefsError] = useState('');
@@ -42,9 +51,18 @@ function App() {
     nudges_enabled: true,
     experiment_id: '',
   });
+  const [bookVersion, setBookVersion] = useState(0);
 
-  // Forms: manual discovery + auth
-  const [newManualItem, setNewManualItem] = useState('');
+  // Search / Selection
+  const [selectedSearchItem, setSelectedSearchItem] = useState(null);
+  const [sortKey, setSortKey] = useState('default'); // default|hsk|stroke|value
+  // Section-specific filters
+  const [hskFilterDiscoverable, setHskFilterDiscoverable] = useState('all');
+  const [strokeFilterDiscoverable, setStrokeFilterDiscoverable] = useState('all');
+  const [hskFilterDiscovered, setHskFilterDiscovered] = useState('all');
+  const [strokeFilterDiscovered, setStrokeFilterDiscovered] = useState('all');
+
+  // Forms: auth
   const [discoveryMessage, setDiscoveryMessage] = useState('');
   const [authUsername, setAuthUsername] = useState('');
   const [authPassword, setAuthPassword] = useState('');
@@ -113,6 +131,9 @@ function App() {
     if (highContrast) root.classList.add('hc'); else root.classList.remove('hc');
   }, [reducedMotion, highContrast]);
 
+  useEffect(() => { localStorage.setItem('reducedMotion', JSON.stringify(reducedMotion)); }, [reducedMotion]);
+  useEffect(() => { localStorage.setItem('highContrast', JSON.stringify(highContrast)); }, [highContrast]);
+
   // Keyboard shortcuts for trainer
   useEffect(() => {
     function onKey(e) {
@@ -164,37 +185,6 @@ function App() {
   }, [showTrainer, trainerPaused, trainerIdx, trainingQueue.items, token, trainerRevealed]);
 
   // ---------- Actions ----------
-  const handleManualDiscover = async () => {
-    setDiscoveryMessage('');
-    if (!newManualItem.trim()) {
-      setDiscoveryMessage('Please enter an item to manually discover.');
-      return;
-    }
-    try {
-      const data = await api('/api/discover', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ item_value: newManualItem.trim() }),
-      });
-      setDiscoveryMessage(data.message || 'Discovered!');
-      setNewManualItem('');
-      await fetchAllItems();
-      // Refresh training queue so newly discovered skills appear immediately
-      try {
-        const q = await api('/api/training/queue', { headers: { Authorization: `Bearer ${token}` } });
-        setTrainingQueue(q);
-      } catch (err) {
-        console.warn('Queue refresh failed after manual discover:', err?.message || err);
-      }
-    } catch (e) {
-      setDiscoveryMessage('Error during manual discovery: ' + e.message);
-      console.error('Manual discovery error:', e);
-    }
-  };
-
   const handleGenerateDaily = async () => {
     setDiscoveryMessage('');
     try {
@@ -256,14 +246,59 @@ function App() {
     }
   };
 
-  const filteredDiscoverable = useMemo(
-    () => filterByTab(discoverableItems, tabDiscoverable),
-    [discoverableItems, tabDiscoverable]
-  );
-  const filteredDiscovered = useMemo(
-    () => filterByTab(discoveredItemsList, tabDiscovered),
-    [discoveredItemsList, tabDiscovered]
-  );
+  // No tag filtering in MVP; rely on tabs + search/sort
+
+  const applyHskFilter = (items, value) => {
+    if (value === 'all') return items;
+    const n = parseInt(value.replace('hsk', ''), 10);
+    if (!Number.isFinite(n)) return items;
+    return items.filter(i => (i.hsk_level ?? null) === n);
+  };
+
+  const strokeInRange = (count, key) => {
+    const c = Number(count);
+    if (!Number.isFinite(c)) return false;
+    switch (key) {
+      case 's1_5': return c >= 1 && c <= 5;
+      case 's6_10': return c >= 6 && c <= 10;
+      case 's11_15': return c >= 11 && c <= 15;
+      case 's16_20': return c >= 16 && c <= 20;
+      case 's21p': return c >= 21;
+      default: return true;
+    }
+  };
+  const applyStrokeFilter = useCallback((items, key) => {
+    if (key === 'all') return items;
+    return items.filter(i => strokeInRange(i.stroke_count, key));
+  }, []);
+
+  const sortItems = (items, key) => {
+    switch (key) {
+      case 'hsk':
+        return [...items].sort((a, b) => (a.hsk_level ?? 999) - (b.hsk_level ?? 999) || (a.id - b.id));
+      case 'stroke':
+        return [...items].sort((a, b) => (a.stroke_count ?? 999) - (b.stroke_count ?? 999) || (a.id - b.id));
+      case 'value':
+        return [...items].sort((a, b) => String(a.value).localeCompare(String(b.value), 'zh-Hans'));
+      default:
+        return items;
+    }
+  };
+
+  const filteredDiscoverable = useMemo(() => {
+    let list = filterByTab(discoverableItems, tabDiscoverable);
+    list = applyHskFilter(list, hskFilterDiscoverable);
+    list = applyStrokeFilter(list, strokeFilterDiscoverable);
+    list = sortItems(list, sortKey);
+    return list;
+  }, [discoverableItems, tabDiscoverable, sortKey, hskFilterDiscoverable, strokeFilterDiscoverable, applyStrokeFilter]);
+  const filteredDiscovered = useMemo(() => {
+    let list = filterByTab(discoveredItemsList, tabDiscovered);
+    list = applyHskFilter(list, hskFilterDiscovered);
+    list = applyStrokeFilter(list, strokeFilterDiscovered);
+    list = sortItems(list, sortKey);
+    return list;
+  }, [discoveredItemsList, tabDiscovered, sortKey, hskFilterDiscovered, strokeFilterDiscovered, applyStrokeFilter]);
 
   // ---------- Auth ----------
   const handleAuthSubmit = async (e) => {
@@ -331,10 +366,42 @@ function App() {
     <div className="App">
       {/* Header */}
       <h1 className="app-title">My HanziDex</h1>
+
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+        <SearchRecommender 
+          token={token} 
+          onSelect={(item) => {
+            setSelectedSearchItem(item);
+            setSelectedSection(null);
+            setSelectedItemIndex(null);
+          }}
+          onDiscover={(item) => handleConvertDiscoverable(item.value)}
+        />
+      </div>
+
       <div className="actions-bar">
         <button className="btn btn--accent" onClick={handleGenerateDaily}>
           Generate Daily Discoverables
         </button>
+        <button className="btn btn--accent" onClick={() => setShowAddWord(true)}>
+          Add Custom Word
+        </button>
+        <button className="btn btn--accent" onClick={() => setShowBook(true)}>
+          📖 Collector's Book
+        </button>
+        <div className="controls-row">
+          <select
+            aria-label="Sort"
+            className="manual-input selectlike"
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value)}
+          >
+            <option value="default">Sort: Default</option>
+            <option value="hsk">Sort: HSK</option>
+            <option value="stroke">Sort: Stroke count</option>
+            <option value="value">Sort: Character</option>
+          </select>
+        </div>
         <button className="btn" onClick={() => setShowPrefs(true)}>
           Preferences
         </button>
@@ -347,19 +414,6 @@ function App() {
         <button className="btn" onClick={logout}>Logout</button>
       </div>
 
-      {/* Manual discovery */}
-      <div style={{ margin: '0 auto 22px', display: 'flex', gap: 10, justifyContent: 'center' }}>
-        <input
-          type="text"
-          value={newManualItem}
-          onChange={(e) => setNewManualItem(e.target.value)}
-          placeholder="Enter Hanzi or Word (e.g., 你, 你好)"
-          className="manual-input"
-          style={{ width: 280 }}
-        />
-        <button className="btn" onClick={handleManualDiscover}>Discover Now</button>
-      </div>
-
       {discoveryMessage && (
         <p style={{ marginTop: 6, color: discoveryMessage.includes('Error') ? 'crimson' : 'seagreen' }}>
           {discoveryMessage}
@@ -368,149 +422,71 @@ function App() {
 
       {/* Daily Discoverables */}
       <h3 style={{ marginTop: 26, marginBottom: 8 }}>Daily Discoverables</h3>
-      <div className="tabs" role="tablist" aria-label="Discoverable filters">
-        <button
-          className={`tab-btn ${tabDiscoverable === 'all' ? 'tab-btn--active' : ''}`}
-          role="tab"
-          aria-selected={tabDiscoverable === 'all'}
-          onClick={() => setTabDiscoverable('all')}
-        >
-          All
-        </button>
-        <button
-          className={`tab-btn ${tabDiscoverable === 'words' ? 'tab-btn--active' : ''}`}
-          role="tab"
-          aria-selected={tabDiscoverable === 'words'}
-          onClick={() => setTabDiscoverable('words')}
-        >
-          Words
-        </button>
-        <button
-          className={`tab-btn ${tabDiscoverable === 'characters' ? 'tab-btn--active' : ''}`}
-          role="tab"
-          aria-selected={tabDiscoverable === 'characters'}
-          onClick={() => setTabDiscoverable('characters')}
-        >
-          Characters
-        </button>
-        <button
-          className={`tab-btn ${tabDiscoverable === 'radicals' ? 'tab-btn--active' : ''}`}
-          role="tab"
-          aria-selected={tabDiscoverable === 'radicals'}
-          onClick={() => setTabDiscoverable('radicals')}
-        >
-          Radicals
-        </button>
-      </div>
-      {filteredDiscoverable.length === 0 ? (
-        <p>No discoverable items yet. Try “Generate Daily Discoverables”.</p>
-      ) : (
-        <div className="hanzi-grid">
-          {filteredDiscoverable.map((item, idx) => (
-            <div
-              key={item.id}
-              className="hanzi-card"
-              tabIndex={0}
-              onClick={() => { setSelectedSection('discoverable'); setSelectedItemIndex(idx); }}
-              onKeyDown={(e) => { if (e.key === 'Enter') { setSelectedSection('discoverable'); setSelectedItemIndex(idx); } }}
-            >
-              <div className="hanzi-glyph">{item.value}</div>
-              <span className="status-chip status--discoverable">
-                discoverable
-              </span>
-
-              <div style={{ marginTop: 12 }}>
-                <button
-                  className="btn btn--accent"
-                  onClick={(e) => { e.stopPropagation(); handleConvertDiscoverable(item.value); }}
-                  aria-label={`Convert ${item.value} (${kindLabel(item)}) to discovered`}
-                >
-                  Catch it
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Discovered grid */}
-      <h2 style={{ marginTop: 32, marginBottom: 8 }}>My HanziDex</h2>
-      <div className="tabs" role="tablist" aria-label="Discovered filters">
-        <button
-          className={`tab-btn ${tabDiscovered === 'all' ? 'tab-btn--active' : ''}`}
-          role="tab"
-          aria-selected={tabDiscovered === 'all'}
-          onClick={() => setTabDiscovered('all')}
-        >
-          All
-        </button>
-        <button
-          className={`tab-btn ${tabDiscovered === 'words' ? 'tab-btn--active' : ''}`}
-          role="tab"
-          aria-selected={tabDiscovered === 'words'}
-          onClick={() => setTabDiscovered('words')}
-        >
-          Words
-        </button>
-        <button
-          className={`tab-btn ${tabDiscovered === 'characters' ? 'tab-btn--active' : ''}`}
-          role="tab"
-          aria-selected={tabDiscovered === 'characters'}
-          onClick={() => setTabDiscovered('characters')}
-        >
-          Characters
-        </button>
-        <button
-          className={`tab-btn ${tabDiscovered === 'radicals' ? 'tab-btn--active' : ''}`}
-          role="tab"
-          aria-selected={tabDiscovered === 'radicals'}
-          onClick={() => setTabDiscovered('radicals')}
-        >
-          Radicals
-        </button>
-      </div>
-      {loadingContent ? (
-        <div>Loading HanziDex content...</div>
-      ) : errorContent ? (
-        <div style={{ color: 'crimson' }}>Error: {errorContent}</div>
-      ) : filteredDiscovered.length === 0 ? (
-        <p>No items discovered yet. Start exploring!</p>
-      ) : (
-        <div className="hanzi-grid">
-          {filteredDiscovered.map((item, idx) => (
-            <div
-              key={item.id}
-              className="hanzi-card"
-              onClick={() => { setSelectedSection('discovered'); setSelectedItemIndex(idx); }}
-              onKeyDown={(e) => { if (e.key === 'Enter') { setSelectedSection('discovered'); setSelectedItemIndex(idx); } }}
-              tabIndex={0}
-              aria-label={`Open details for ${item.value}`}
-            >
-              <div className="hanzi-glyph">{item.value}</div>
-              <span className="status-chip status--discovered">discovered</span>
-            </div>
-          ))}
-        </div>
+      {/* Tag filters removed per feedback */}
+      
+      {/* Discovered grid removed per feedback */}
+      
+      {showBook && (
+        <CollectorsBook 
+          token={token} 
+          version={bookVersion}
+          onClose={() => setShowBook(false)}
+          onSelectItem={(item) => {
+            setSelectedSearchItem(item);
+          }}
+        />
       )}
 
       {/* Detail modal */}
-      {selectedSection && (
+      {selectedSearchItem && (
         <HanziModal
-          item={(selectedSection === 'discoverable' ? filteredDiscoverable : filteredDiscovered)[selectedItemIndex]}
-          onClose={() => { setSelectedItemIndex(null); setSelectedSection(null); }}
-          onPrev={() => setSelectedItemIndex((i) => Math.max(0, (i ?? 0) - 1))}
-          onNext={() => setSelectedItemIndex((i) => {
-            const listLength = selectedSection === 'discoverable' ? filteredDiscoverable.length : filteredDiscovered.length;
-            return Math.min(listLength - 1, (i ?? 0) + 1);
-          })}
-          onCatch={selectedSection === 'discoverable' ? async () => {
-            const list = selectedSection === 'discoverable' ? filteredDiscoverable : filteredDiscovered;
-            const item = list[selectedItemIndex];
-            if (!item) return;
-            await handleConvertDiscoverable(item.value);
-            setSelectedItemIndex(null);
-            setSelectedSection(null);
+          item={selectedSearchItem}
+          onClose={() => setSelectedSearchItem(null)}
+          onUpdate={(updatedItem) => {
+            setSelectedSearchItem(updatedItem);
+            setDiscoveredItemsList(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
+            setDiscoverableItems(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
+            setBookVersion(v => v + 1);
+          }}
+          onDelete={(deletedId) => {
+            setSelectedSearchItem(null);
+            setDiscoveredItemsList(prev => prev.filter(i => i.id !== deletedId));
+            setDiscoverableItems(prev => prev.filter(i => i.id !== deletedId));
+            setBookVersion(v => v + 1);
+          }}
+          onCatch={selectedSearchItem.status === 'DISCOVERABLE' ? async () => {
+            await handleConvertDiscoverable(selectedSearchItem.value);
+            setSelectedSearchItem(null);
+            setBookVersion(v => v + 1);
           } : undefined}
+          onSelectRelated={async (value) => {
+            // Fetch the item details
+            try {
+              const res = await api(`/api/search-items?q=${encodeURIComponent(value)}`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              // Find exact match
+              const match = res.find(i => i.value === value);
+              if (match) {
+                setSelectedSearchItem(match);
+              } else {
+                console.warn('Related item not found:', value);
+              }
+            } catch (e) {
+              console.error('Failed to load related item:', e);
+            }
+          }}
+        />
+      )}
+
+      {showAddWord && (
+        <AddWordModal
+          token={token}
+          onClose={() => setShowAddWord(false)}
+          onAdded={(newItem) => {
+            setSelectedSearchItem(newItem);
+            // Optionally refresh lists if needed
+          }}
         />
       )}
 
@@ -521,12 +497,37 @@ function App() {
               <h3 className="app-title" style={{ margin: 0 }}>Training Session</h3>
               <button className="close-btn" onClick={() => setShowTrainer(false)}>✖</button>
             </div>
+            {/* Progress bar */}
+            {trainingQueue.items.length > 0 && (
+              (() => {
+                const at = Math.min(trainerIdx, Math.max(0, trainingQueue.items.length - 1));
+                const idxHuman = at + 1;
+                const total = trainingQueue.items.length;
+                const pct = Math.max(0, Math.min(100, Math.round((idxHuman / total) * 100)));
+                return (
+                  <div style={{ height: 6, borderRadius: 999, background: '#e5e7eb', overflow: 'hidden', boxShadow: 'var(--shadow-soft)', margin: '0 0 8px' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent)' }} />
+                  </div>
+                );
+              })()
+            )}
+            <div style={{
+              display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center',
+              fontSize: 12, color: '#6b7280', marginBottom: 6
+            }}>
+              <span>Keys:</span>
+              <span><code>Space</code>/<code>Enter</code> reveal/next</span>
+              <span><code>1</code>/<code>2</code>/<code>3</code>/<code>4</code> grade</span>
+              <span><code>U</code> undo</span>
+              <span><code>S</code> suspend</span>
+              <span><code>P</code> pause</span>
+            </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 8 }}>
               <button className="btn" onClick={() => setTrainerPaused((p) => !p)}>{trainerPaused ? 'Resume' : 'Pause'}</button>
               <button className="btn" onClick={async () => {
                 // Undo last
                 const prev = trainingQueue.items[Math.max(0, trainerIdx - 1)] || trainingQueue.items[0];
-                const cur = trainingQueue.items[Math.min(trainerIdx, Math.max(0, trainingQueue.items.length - 1))];
+                const cur = trainingQueue.items[Math.min(trainerIdx, trainingQueue.items.length - 1)];
                 const target = prev || cur;
                 if (!target) return;
                 await api(`/api/items/${target.item_id}/skills/${target.skill_code}/undo`, {
@@ -556,6 +557,8 @@ function App() {
               (() => {
                 const cur = trainingQueue.items[Math.min(trainerIdx, trainingQueue.items.length - 1)];
                 if (!cur) return <p>No card.</p>;
+                const idxHuman = Math.min(trainerIdx, trainingQueue.items.length - 1) + 1;
+                const total = trainingQueue.items.length;
                 async function doTrain(rating) {
                   await api(`/api/items/${cur.item_id}/skills/${cur.skill_code}/train`, {
                     method: 'POST',
@@ -569,6 +572,9 @@ function App() {
                 }
                 return (
                   <div>
+                    <div style={{ textAlign: 'center', fontSize: 12, color: '#6b7280' }}>
+                      Card {idxHuman} of {total}
+                    </div>
                     <div style={{ textAlign: 'center', marginTop: 4 }}>
                       <div style={{ fontSize: 46, lineHeight: '54px' }}>
                         {cur.card_front || cur.value}
@@ -785,6 +791,20 @@ function PrefsForm({ token, prefs, setPrefs, loading, saving, error, onLoad, onS
               onChange={(e) => setPrefs({ ...prefs, nudges_enabled: e.target.checked })}
             />
             <span>Enable gentle nudges</span>
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="checkbox"
+              checked={JSON.parse(localStorage.getItem('reducedMotion') || 'false')}
+              onChange={(e) => localStorage.setItem('reducedMotion', JSON.stringify(e.target.checked))}
+            />
+            <span>Reduced motion (UI animations off)</span>
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="checkbox"
+              checked={JSON.parse(localStorage.getItem('highContrast') || 'false')}
+              onChange={(e) => localStorage.setItem('highContrast', JSON.stringify(e.target.checked))}
+            />
+            <span>High contrast (stronger edges)</span>
           </label>
           <label style={{ display: 'grid', gap: 4 }}>
             <span>Experiment ID (optional)</span>

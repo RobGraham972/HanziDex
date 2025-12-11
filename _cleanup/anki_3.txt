@@ -1,0 +1,78 @@
+Front	Back
+What three components define a function \(f: A \to B\)?	A domain \(A\), a codomain \(B\), and a rule that assigns a unique element in \(B\) to each element in \(A\).
+For a function \(f: A \to B\), what is the term for the set of all values that are actually taken by \(f\), i.e., \(\{y \in B : y = f(x) \text{ for some } x \in A\}\)?	The range of \(f\).
+Why is the curve defined by the equation \(y^2 = x\) not the graph of a function?	Because a single input value, for example \(x=1\), is associated with two different output values, \(y=1\) and \(y=-1\).
+What is the intuitive, informal definition of a continuous real function?	A function is 'continuous' if we can draw its complete graph without removing the pen from the paper.
+State the rigorous, sequential definition of continuity for a function \(f: A \to B\) at a point \(a \in A\).	The function \(f\) is continuous at \(a\) if for every sequence \((a_n)_{n \in \mathbb{N}}\) in \(A\) that converges to \(a\), the sequence \(f(a_n)\) converges to \(f(a)\).
+Consider the function \(f(x) = \begin{cases} -1 & \text{if } x \le 0 \\ 1 & \text{if } x > 0 \end{cases}\). Explain why it is discontinuous at \(x=0\) using a specific sequence.	The sequence \((1/n)\) converges to \(0\), but the sequence \((f(1/n)) = (1, 1, 1, ...)\) converges to \(1\), which is not equal to \(f(0) = -1\).
+In the context of function limits, what is the intuitive meaning of the statement 'the limit of \(f(x)\) as \(x\) approaches \(a\) is \(L\)'?	If you choose values of \(x\) which are close but not equal to \(a\), then \(f(x)\) will be close to the value \(L\).
+The statement \(\lim_{x \to a} f(x) = L\) means that for every \(\epsilon > 0\) there exists a _____ such that for all \(x \in A\) with \(|x-a| < _____\) we have \(|f(x) - L| < \epsilon\).	\(\delta_{\epsilon}\)
+State the Product Rule for limits of functions. Assume \(\lim_{x \to a} f(x)\) and \(\lim_{x \to a} g(x)\) exist.	\(\lim_{x \to a} (f(x)g(x)) = (\lim_{x \to a} f(x)) \cdot (\lim_{x \to a} g(x))\).
+State the Quotient Rule for limits of functions. Assume \(\lim_{x \to a} f(x)\) and \(\lim_{x \to a} g(x)\) exist.	\(\lim_{x \to a} \frac{f(x)}{g(x)} = \frac{\lim_{x \to a} f(x)}{\lim_{x \to a} g(x)}\), provided \(\lim_{x \to a} g(x) \ne 0\).
+What is the \((\epsilon - \delta)\)-definition of continuity for a function \(f: A \to B\) at a point \(a \in A\)?	For every \(\epsilon > 0\) there exists a \(\delta_{\epsilon} > 0\) such that for all \(x \in A\) with \(|x - a| < \delta_{\epsilon}\) we have \(|f(x) - f(a)| < \epsilon\).
+In an \((\epsilon - \delta)\) proof of continuity for \(f(x) = 3x - 7\) at \(x = 4\), how can \(\delta_{\epsilon}\) be chosen in terms of \(\epsilon\)?	We can choose \(\delta_{\epsilon} = \epsilon/3\), because \(|(3x-7) - 5| = |3x-12| = 3|x-4|\), so requiring \(3|x-4| < \epsilon\) is equivalent to \(|x-4| < \epsilon/3\).
+In an \((\epsilon - \delta)\) proof of continuity for \(f(x) = 1/x\) at \(x_0 > 0\), we have \(|f(x) - f(x_0)| = \frac{|x - x_0|}{x x_0}\). If we assume \(\delta < x_0/2\), what lower bound does this place on \(x\)?	The assumption \(|x - x_0| < x_0/2\) implies that \(x > x_0/2\).
+What does the notation \(x \to a^+\) signify when taking the limit of a function?	It means that \(x\) approaches \(a\) from the right, i.e., through values greater than \(a\).
+What does it mean for the limit of \(f(x)\) as \(x\) tends to \(\infty\) to be \(L\)?	For every \(\epsilon > 0\), there exists a number \(A_{\epsilon}\) such that for all \(x > A_{\epsilon}\), we have \(|f(x) - L| < \epsilon\).
+For the function \(f(x) = \frac{1}{x-2}\), what is \(\lim_{x \to 2^+} f(x)\)?	\(\lim_{x \to 2^+} f(x) = \infty\).
+For the function \(f(x) = \frac{1}{x-2}\), what is \(\lim_{x \to 2^-} f(x)\)?	\(\lim_{x \to 2^-} f(x) = -\infty\).
+A straight line that becomes close to the curve of a function as \(x\) or \(y\) tends to \(\pm\infty\) is called an _____.	asymptote
+A function \(f\) is called even if it satisfies what property for all \(x\) in its domain?	It satisfies \(f(-x) = f(x)\).
+A function \(f\) is called odd if it satisfies what property for all \(x\) in its domain?	It satisfies \(f(-x) = -f(x)\).
+A real function \(f\) is strictly increasing if for any \(a < b\) in its domain, what inequality holds?	\(f(a) < f(b)\).
+To find the asymptote of the rational function \(f(x) = \frac{x+2}{x-1}\) as \(x \to \pm\infty\), what is the first step?	Use polynomial division to rewrite the function as \(f(x) = 1 + \frac{3}{x-1}\).
+What is the equation of the horizontal asymptote for the function \(f(x) = \frac{x+2}{x-1}\)?	\(y=1\).
+What is the equation of the vertical asymptote for the function \(f(x) = \frac{x+2}{x-1}\)?	\(x=1\).
+What is the equation of the oblique (slant) asymptote for the function \(f(x) = \frac{x^2 - x - 6}{x+1}\)?	\(y = x-2\).
+Define the modulus function, \(|x|\) or `abs(x)`, for a real number \(x\).	\(|x| = \begin{cases} x & \text{if } x \ge 0 \\ -x & \text{if } x < 0 \end{cases}\).
+What is the definition of the exponential function, \(\exp(x)\) or \(e^x\), as an infinite series?	\(\exp(x) = \sum_{n=0}^{\infty} \frac{x^n}{n!} = 1 + x + \frac{x^2}{2!} + \frac{x^3}{3!} + \dots\) .
+What is the functional equation of the exponential function, as stated in Theorem 2.2?	\(\exp(x) \exp(y) = \exp(x+y)\) for all \(x, y \in \mathbb{R}\).
+How is \(\exp(-x)\) related to \(\exp(x)\)?	\(\exp(-x) = 1 / \exp(x)\).
+What is the value of \(\lim_{x \to \infty} \exp(x)\)?	The limit is \(\infty\).
+What is the value of \(\lim_{x \to -\infty} \exp(x)\)?	The limit is \(0\).
+For functions \(f: A \to B\) and \(g: B \to C\), how is the composition \(g \circ f\) defined?	The composition is the function \(g \circ f: A \to C\) defined by \((g \circ f)(x) = g(f(x))\).
+If \(g(x) = \sin x\) and \(f(x) = x^2\), what is \((g \circ f)(x)\)?	\((g \circ f)(x) = \sin(x^2)\).
+If a function \(f: A \to B\) has an inverse function \(g: B \to A\), what equation relates \(x\) and \(y\)?	If \(y = f(x)\), then the inverse function gives \(x = g(y)\).
+A function must be _____ to have a unique inverse.	bijective (both injective and surjective)
+What is the geometrical relationship between the graph of a function \(f\) and its inverse \(f^{-1}\)?	The graph of \(f^{-1}\) is obtained by reflecting the graph of \(f\) in the line \(y=x\).
+To define the inverse sine function, \(\sin^{-1}\) or \(\arcsin\), the domain of \(\sin x\) is restricted to what interval?	The domain is restricted to \([-\pi/2, \pi/2]\).
+The natural logarithm function, \(\log x\) or \(\ln x\), is defined as the inverse of what function?	The exponential function, \(y=e^x\).
+What is the domain of the natural logarithm function, \(y = \log x\)?	The set of positive real numbers, \(\mathbb{R}^+\) or \((0, \infty)\).
+What is the range of the natural logarithm function, \(y = \log x\)?	The set of all real numbers, \(\mathbb{R}\) or \((-\infty, \infty)\).
+State the functional equation of the logarithm function for \(x, y > 0\).	\(\log(xy) = \log x + \log y\).
+What is the value of \(\lim_{x \to \infty} \log x\)?	The limit is \(\infty\).
+What is the value of \(\lim_{x \to 0^+} \log x\)?	The limit is \(-\infty\).
+For \(a > 0\), how is the power function \(a^x\) defined in terms of the exponential and logarithm functions?	\(a^x\) is defined as \(e^{x \log a}\) or \(\exp(x \log a)\).
+According to the power laws (Theorem 2.6), what is the simplified form of \((a^x)(b^x)\)?	\((ab)^x\).
+For \(a>0\), what is the value of \(\lim_{x \to \infty} x^a\)?	The limit is \(\infty\).
+For \(r>1\), what is the value of \(\lim_{x \to \infty} r^x\)?	The limit is \(\infty\).
+For \(0 < r < 1\), what is the value of \(\lim_{x \to \infty} r^x\)?	The limit is \(0\).
+What fundamental identity, derived from Pythagoras' Theorem, relates \(\sin x\) and \(\cos x\)?	\(\cos^2 x + \sin^2 x = 1\).
+What are the exact values of \(\sin(\pi/4)\), \(\cos(\pi/4)\), and \(\tan(\pi/4)\)?	\(\sin(\pi/4) = 1/\sqrt{2}\), \(\cos(\pi/4) = 1/\sqrt{2}\), and \(\tan(\pi/4) = 1\).
+What are the exact values of \(\sin(\pi/6)\), \(\cos(\pi/6)\), and \(\tan(\pi/6)\)?	\(\sin(\pi/6) = 1/2\), \(\cos(\pi/6) = \sqrt{3}/2\), and \(\tan(\pi/6) = 1/\sqrt{3}\).
+State the trigonometric addition formula for \(\sin(x+y)\).	\(\sin(x+y) = \sin x \cos y + \cos x \sin y\).
+Define the secant function, \(\sec x\), in terms of a basic trigonometric function.	\(\sec x = 1/\cos x\).
+Define the cosecant function, \(\csc x\), in terms of a basic trigonometric function.	\(\csc x = 1/\sin x\).
+Define the cotangent function, \(\cot x\), in terms of a basic trigonometric function.	\(\cot x = 1/\tan x\) or \(\cos x / \sin x\).
+What is the range of the function \(f: \mathbb{R} \to \mathbb{R}\) given by \(f(x) = 2x^2 - 1\)?	The range is \([-1, \infty)\).
+What are the x-intercepts of the function \(y = \frac{x^2+6x-3}{x-4}\)?	The x-intercepts are at \(x = -3 \pm 2\sqrt{3}\).
+To find the inverse of the logistic function \(y = f(x) = \frac{1}{1+e^{-x}}\), one first rearranges to get \(e^{-x} = \frac{1-y}{y}\). What is the final expression for \(x\) in terms of \(y\)?	\(x = \log\left(\frac{y}{1-y}\right)\).
+For the function \(f(x) = \frac{x+1}{(x-3)(x+2)}\), what are the equations of the vertical asymptotes?	The vertical asymptotes are \(x=3\) and \(x=-2\).
+For the function \(f(x) = \frac{x+1}{(x-3)(x+2)}\), what is the equation of the horizontal asymptote?	The horizontal asymptote is \(y=0\) (the x-axis).
+The function \(g(t) = f(t) - 1/2\), where \(f(t)\) is the logistic function, has the property that \(g(t) = -g(-t)\). What type of symmetry does this imply?	It implies that \(g(t)\) is an odd function.
+In an \((\epsilon - \delta)\) proof that \(f(x) = 2x - 5\) is continuous at \(x=2\), the inequality to satisfy is \(|(2x-5) - (-1)| < \epsilon\). If \(\delta_{\epsilon} = \epsilon/2\), show this is satisfied.	\(|(2x-5) - (-1)| = |2x-4| = 2|x-2| < 2\delta_{\epsilon} = 2(\epsilon/2) = \epsilon\).
+In the \((\epsilon - \delta)\) proof for continuity of \(f(x)=x^2+2x-1\) at \(x=1\), we need to bound \(|(x-1)^2+4(x-1)|\). If we assume \(\delta_{\epsilon} \le 1\), what bound can be placed on the expression?	If \(|x-1| < \delta_{\epsilon}\) where \(\delta_{\epsilon} \le 1\), then \(|(x-1)^2+4(x-1)| \le |x-1|^2 + 4|x-1| < \delta_{\epsilon}^2 + 4\delta_{\epsilon} \le 5\delta_{\epsilon}\).
+The natural logarithm function \(\log x\) can be described as 'the power to which \(e\) must be raised to give \(x\)'. Express this relationship using an equation.	\(e^{\log x} = x\).
+What identity connects \(\sin(\frac{\pi}{2} - x)\) to another trigonometric function?	\(\sin(\frac{\pi}{2} - x) = \cos x\).
+What identity connects \(\cos(\pi - x)\) to another trigonometric function?	\(\cos(\pi - x) = -\cos x\).
+The inverse hyperbolic secant function, \(\text{sech}^{-1}x\), has what domain and range?	The domain is \((0, 1]\) and the range is \([0, \infty)\).
+Using the series definition of \(\exp(x)\), prove that for \(x > 0\), the inequality \(\exp(x) > 1+x\) holds.	For \(x>0\), all terms in the series \(\exp(x) = 1 + x + \frac{x^2}{2!} + \frac{x^3}{3!} + \dots\) are positive, so the sum must be greater than the first two terms, \(1+x\).
+What is the relationship between the codomain and the range of a function?	The range is always a subset of the codomain.
+If a function is bijective, what is the relationship between its codomain and its range?	If a function is bijective, its codomain is equal to its range.
+If \(y = \log_a x\), what is the equivalent expression in exponential form?	\(a^y = x\).
+What is the x-intercept of the graph of \(y=\log x\)?	The x-intercept is at \((1, 0)\).
+The graph of the exponential function \(y=e^x\) has what y-intercept?	The y-intercept is at \((0, 1)\).
+What is the range of the function \(f: [-\pi/2, \pi/2] \to [-1, 1]\) defined by \(f(x) = \sin x\)?	The range is \([-1, 1]\).
+What is the domain of the function \(g: [-1, 1] \to [-\pi/2, \pi/2]\) defined by \(g(x) = \arcsin x\)?	The domain is \([-1, 1]\).
+A function \(f\) is said to be _____ if it never takes on the same value twice, i.e., if \(f(x_1) = f(x_2)\) implies \(x_1 = x_2\).	injective
+A function \(f: A \to B\) is said to be _____ if its range is equal to its codomain, i.e., for every \(y \in B\) there is an \(x \in A\) such that \(f(x)=y\).	surjective

@@ -1,0 +1,76 @@
+What is the set of natural numbers, and what is its standard notation?	The set of natural numbers is the set of positive integers used in counting, denoted by $\mathbb{N} = \{1, 2, 3, \dots \}$.
+Define the set of integers, denoted by $\mathbb{Z}$.	The set of integers is the set of positive and negative whole numbers, including zero, denoted by $\mathbb{Z} = \{\dots, -2, -1, 0, 1, 2, \dots \}$.
+What is the definition of the set of rational numbers, $\mathbb{Q}$?	The set of rational numbers is the set of all numbers that can be expressed as a fraction of two integers, $\mathbb{Q} = \{a/b : a, b \in \mathbb{Z}, b \ne 0\}$.
+The set of real numbers, $\mathbb{R}$, includes the rational numbers $\mathbb{Q}$ and what other type of numbers?	The set of real numbers $\mathbb{R}$ also includes irrational numbers, such as $\sqrt{2}$ and $\pi$.
+State Archimedesâ Axiom for the real numbers.	For every real number $x$, there exists a natural number $n \in \mathbb{N}$ such that $x < n$.
+What does the notation $(a, b)$ represent in the context of intervals on the real line?	It represents the open interval from $a$ to $b$, defined as $\{x \in \mathbb{R} : a < x < b\}$, which excludes the endpoints.
+What does the notation $[a, b]$ represent in the context of intervals on the real line?	It represents the closed interval from $a$ to $b$, defined as $\{x \in \mathbb{R} : a \le x \le b\}$, which includes the endpoints.
+A non-zero real polynomial $f(X)$ can be written as $f(X) = a_n X^n + a_{n-1}X^{n-1} + \dots + a_1 X + a_0$. If $a_n \ne 0$, what is the term 'degree' referring to?	The degree of the polynomial is the highest power of the indeterminate $X$, which is $n$.
+What is a root (or zero) of a polynomial $f(X)$?	A number $a$ is a root of $f(X)$ if substituting $a$ for $X$ results in zero, i.e., $f(a) = 0$.
+State the Division Algorithm for polynomials (Theorem 1.2).	For any non-zero polynomials $f(X)$ and $d(X)$, there exist unique polynomials $q(X)$ (quotient) and $r(X)$ (remainder) such that $f(X) = q(X)d(X) + r(X)$, where either $r(X) = 0$ or the degree of $r(X)$ is less than the degree of $d(X)$.
+According to the Factor Theorem (Theorem 1.3), a polynomial $f(X)$ has a real number $a$ as a root if and only if _____ is a factor of $f(X)$.	$X-a$
+A real polynomial $f(X)$ of degree $n > 0$ can be factored as $f(X) = g(X)(X-a_1)(X-a_2)...(X-a_r)$. What are $a_1, ..., a_r$ and what is the property of $g(X)$?	$a_1, ..., a_r$ are all the real roots of $f(X)$, and $g(X)$ is a polynomial with no real roots.
+For a quadratic polynomial $X^2 + 2bX + c$, what condition on $b$ and $c$ ensures there are two distinct real roots?	The condition is $b^2 > c$, leading to distinct real roots.
+For a quadratic polynomial $X^2 + 2bX + c$, what condition on $b$ and $c$ indicates a double real root?	The condition is $b^2 = c$, leading to a double real root.
+When is a quadratic polynomial $X^2 + 2bX + c$ considered irreducible over $\mathbb{R}$?	It is irreducible over $\mathbb{R}$ when it has no real roots, which occurs if $b^2 < c$.
+What defines a proper rational function?	A rational function $\frac{f(X)}{g(X)}$ is proper if the degree of the numerator polynomial $f(X)$ is less than the degree of the denominator polynomial $g(X)$.
+What is the general form of the partial fraction decomposition for a term with a repeated linear factor in the denominator, such as $\frac{r(X)}{(X-\alpha_i)^{s_i}}$?	The decomposition includes a sum of terms: $\frac{\delta_{i1}}{X - \alpha_i} + \frac{\delta_{i2}}{(X - \alpha_i)^2} + \dots + \frac{\delta_{isi}}{(X - \alpha_i)^{s_i}}$.
+What is the form of the numerator in a partial fraction decomposition corresponding to an irreducible quadratic factor like $(X^2 + \beta X + \gamma)$?	The numerator must be a linear term of the form $AX + B$.
+Express the rational function $\frac{3x- 1}{(x+ 2)^2}$ in partial fractions.	The partial fraction decomposition is $\frac{3}{x+2} - \frac{7}{(x+2)^2}$.
+What are the two essential steps in a proof by the principle of mathematical induction for a statement $P(n)$?	The two steps are the 'Basis of induction' (proving $P(1)$ is true) and the 'Induction step' (proving that if $P(k)$ is true, then $P(k+1)$ is also true).
+Use induction to prove the formula for the sum of the first $n$ positive integers.	Let $P(n): \sum_{i=1}^n i = \frac{n(n+1)}{2}$. Basis $P(1): 1 = \frac{1(2)}{2}$ is true. Assume $P(k)$ holds. Then $\sum_{i=1}^{k+1} i = (\sum_{i=1}^k i) + (k+1) = \frac{k(k+1)}{2} + (k+1) = \frac{(k+1)(k+2)}{2}$, so $P(k+1)$ holds. Thus, $P(n)$ is true for all $n \ge 1$.
+What is the formula for the sum of the first $n$ square numbers, i.e., $\sum_{k=1}^n k^2$?	The formula is $1^2 + 2^2 + \dots + n^2 = \frac{1}{6}n(n+1)(2n+1)$.
+What is the definition of the binomial coefficient $\binom{n}{k}$ for integers $0 < k \le n$?	The binomial coefficient is defined as $\binom{n}{k} = \frac{n!}{k!(n-k)!}$.
+Calculate the value of the binomial coefficient $\binom{5}{3}$.	$\binom{5}{3} = \frac{5!}{3!(5-3)!} = \frac{5 \cdot 4 \cdot 3}{3 \cdot 2 \cdot 1} = 10$.
+What is a sequence?	A sequence is a list of numbers written in a definite order, $a_1, a_2, a_3, \dots$, which can be thought of as a function with domain $\mathbb{N}$.
+A sequence $(a_n)_{n \in \mathbb{N}}$ has a limit $L$ if for every $\epsilon > 0$, there exists an integer $N$ such that if $n > N$, then _____.	$|a_n - L| < \epsilon$
+What does it mean for a sequence to be convergent?	A sequence $(a_n)$ is convergent if $\lim_{n\to\infty} a_n$ exists and is a finite number.
+If a sequence is not convergent, what is it called?	It is called a divergent sequence.
+If $\lim_{n\to\infty} a_n = a$ and $\lim_{n\to\infty} b_n = b$, what is $\lim_{n\to\infty}(a_n \cdot b_n)$?	The limit is the product of the individual limits, $\lim_{n\to\infty}(a_n \cdot b_n) = a \cdot b$.
+Determine the limit of the sequence given by $a_n = \frac{n^3+n+1}{2n^3+1}$.	The limit is $\frac{1}{2}$, found by dividing the numerator and denominator by $n^3$ and taking the limit as $n \to \infty$.
+For a geometric sequence $(r^n)_{n\in\mathbb{N}}$, what is the condition on the common ratio $r$ for the sequence to converge to zero?	The sequence converges to zero if and only if $-1 < r < 1$ (or $|r|<1$).
+What happens to the geometric sequence $(r^n)_{n\in\mathbb{N}}$ if $r > 1$?	The sequence diverges to infinity.
+What is the value of the important limit $\lim_{n\to\infty} (1 + \frac{1}{n})^n$?	The limit is Euler's number, $e$.
+For any constant $a > 0$, what is the value of $\lim_{n\to\infty} \sqrt[n]{a}$?	The limit is 1.
+What is the value of the limit $\lim_{n\to\infty} \sqrt[n]{n}$?	The limit is 1.
+Define a series $\sum_{k=1}^{\infty} a_k$ in terms of a sequence.	A series is the sequence of its partial sums $(s_n)_{n\in\mathbb{N}}$, where $s_n = \sum_{k=1}^n a_k$.
+What is the $n$-th partial sum of a series?	The $n$-th partial sum, denoted $s_n$, is the sum of the first $n$ terms of the sequence, $s_n = a_1 + a_2 + \dots + a_n$.
+A series $\sum_{k=1}^{\infty} a_k$ is said to converge to a sum $s$ if what condition is met?	The series converges to $s$ if the sequence of its partial sums $(s_n)$ converges to $s$, i.e., $\lim_{n\to\infty} s_n = s$.
+What is the sum of the telescoping series $\sum_{k=1}^{\infty} \frac{1}{k(k+1)}$?	The sum is 1, as the partial sum $s_n = (1 - \frac{1}{2}) + (\frac{1}{2} - \frac{1}{3}) + \dots + (\frac{1}{n} - \frac{1}{n+1}) = 1 - \frac{1}{n+1}$, which tends to 1.
+The partial sums of the series $1-1+1-1+\dots$ are $1, 0, 1, 0, \dots$. Does this series converge?	No, the series does not converge because the sequence of partial sums does not have a limit.
+What is the formula for the sum of a convergent geometric series with first term $a$ and common ratio $r$?	The sum is $s = \frac{a}{1-r}$, provided that $|r|<1$.
+State the necessary condition for the convergence of a series $\sum a_n$.	If the series $\sum a_n$ converges, then the limit of its terms must be zero, i.e., $\lim_{n\to\infty} a_n = 0$.
+What is the name of the test for divergence that states if $\lim_{n\to\infty} a_n \ne 0$ or the limit does not exist, then the series $\sum a_n$ diverges?	This is often called the 'Test for Divergence' or 'nth-Term Test'.
+What is the harmonic series, and does it converge or diverge?	The harmonic series is $\sum_{n=1}^{\infty} \frac{1}{n}$, and it diverges, even though its terms approach zero.
+State the Comparison Test for two series $\sum a_n$ and $\sum b_n$ with positive terms.	If $0 \le a_n \le b_n$ for all $n$, then: (i) If $\sum b_n$ converges, then $\sum a_n$ converges. (ii) If $\sum a_n$ diverges, then $\sum b_n$ diverges.
+For what values of $\alpha$ does the p-series $\sum_{n=1}^{\infty} \frac{1}{n^{\alpha}}$ converge?	The p-series converges if and only if $\alpha > 1$.
+Does the series $\sum_{n=1}^{\infty} \frac{1}{n^2}$ converge or diverge?	It converges, because it is a p-series with $p=2 > 1$.
+Does the series $\sum_{n=1}^{\infty} \frac{1}{\sqrt{n}}$ converge or diverge?	It diverges, because it is a p-series with $p=1/2 \le 1$.
+What is a factor of $f(X) = X^4 - 2X^3 - 13X^2 + 14X + 24$, given that $-1$ is a root?	Since $-1$ is a root, $(X - (-1))$ or $(X+1)$ is a factor.
+Find the sum of the series $1 \cdot 2 + 2 \cdot 3 + \dots + n(n+1)$.	The sum is given by the formula $\frac{1}{3}n(n+1)(n+2)$.
+What is the sum of the geometric series $\sum_{k=1}^{\infty} x^{2k}$ for $|x|<1$?	This is a geometric series with first term $a=x^2$ and common ratio $r=x^2$, so the sum is $\frac{x^2}{1-x^2}$.
+Decompose $\frac{1}{n(n+1)(n+2)}$ into partial fractions.	The decomposition is $\frac{1/2}{n} - \frac{1}{n+1} + \frac{1/2}{n+2}$.
+Find the sum of the series $\sum_{n=1}^\infty \frac{1}{n(n+1)(n+2)}$.	The sum of the series is $\frac{1}{4}$.
+Calculate the limit of the sequence $x_n = \frac{n^2+1}{3n^2+2}$.	The limit is $\frac{1}{3}$.
+In the Principle of Induction, what is the 'induction hypothesis'?	The induction hypothesis is the assumption made in the induction step that the statement $P(k)$ is true for some integer $k \ge 1$.
+What is the formula for the sum of a finite geometric series $a + ar + \dots + ar^{n-1}$?	The sum is given by $S_n = a\frac{1-r^n}{1-r}$ for $r \ne 1$.
+A series $\sum_{k=1}^{\infty} a_k$ is defined by the _____ of its partial sums.	limit
+Factorise the polynomial $f(X) = X^3 - 7X^2 + 16X - 12$ into linear factors.	Noting that $f(2)=0$, we can divide by $(X-2)$ to get $(X-2)(X^2-5X+6)$, which fully factorises to $(X-2)(X-2)(X-3)$ or $(X-2)^2(X-3)$.
+Find the quotient and remainder when $f(X) = 3X^3 + 4X^2 - 6X + 9$ is divided by $d(X) = X^2 + 2X - 3$.	The quotient is $q(X) = 3X - 2$ and the remainder is $r(X) = 7X + 3$.
+What does it mean if a polynomial is said to have a 'double root'?	A double root is a root that appears twice in the list of roots, corresponding to a factor of the form $(X-a)^2$.
+What is the relationship between the sets $\mathbb{N}, \mathbb{Z}, \mathbb{Q}, \mathbb{R}$?	They are nested subsets: $\mathbb{N} \subset \mathbb{Z} \subset \mathbb{Q} \subset \mathbb{R}$.
+Is the sequence $a_n = (-1)^n$ convergent or divergent?	It is divergent because it oscillates between $1$ and $-1$ and does not approach a single limit.
+What is a 'telescoping series'?	A telescoping series is one where the partial sums simplify due to cancellation of intermediate terms, leaving only the first few and last few terms.
+If a sequence $(a_n)$ is convergent, is it necessarily bounded?	Yes, every convergent sequence is bounded.
+Express the rational function $\frac{4X^2 - 6X + 11}{(X^2 + 1)(X - 2)}$ in partial fractions.	The partial fraction decomposition is $\frac{X-4}{X^2+1} + \frac{3}{X-2}$.
+If a series $\sum a_n$ converges, what must be true about the sequence of its terms $a_n$?	The sequence of its terms must converge to zero, i.e., $\lim_{n\to\infty} a_n = 0$.
+Is the converse of the nth-Term Test for Divergence true? That is, if $\lim_{n\to\infty} a_n = 0$, must the series $\sum a_n$ converge?	No, the converse is false; the harmonic series $\sum 1/n$ is a counterexample.
+The sum $\sum_{r=1}^n (-1)^{r-1}r^2 = 1^2 - 2^2 + 3^2 - \dots + (-1)^{n-1}n^2$ has what closed-form expression?	The sum is equal to $(-1)^{n-1} \frac{n(n+1)}{2}$.
+Using the comparison test, does the series $\sum_{n=1}^\infty \frac{1}{n!}$ converge?	Yes, it converges. For $n \ge 2$, we have $n! \ge n^2$, so $0 < \frac{1}{n!} \le \frac{1}{n^2}$, and since $\sum \frac{1}{n^2}$ converges, the original series converges by comparison.
+What type of polynomial has the form $aX^3 + bX^2 + cX + d$?	This is a cubic polynomial (degree 3).
+Given the formula $\sum_{i=1}^n (3i^2-5)$, express the sum in terms of $n$.	The sum is $\frac{1}{2}n(n+3)(2n-3)$.
+A sequence $(a_n)$ is said to have _____ limit.	at most one
+What is the degree of the zero polynomial?	The degree of the zero polynomial is undefined.
+The real line is described as a _____, meaning it has no gaps.	continuum
+Archimedes showed that $\pi$ is bounded by which two rational numbers?	He showed that $\frac{223}{71} < \pi < \frac{22}{7}$.
+What is the formula for the sum of the series $3+7+11+\dots+(4n-1)$?	The sum is given by the formula $n(2n+1)$.

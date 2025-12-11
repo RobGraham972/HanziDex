@@ -16,16 +16,32 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
+  // Helper to check if token is expired
+  const isTokenExpired = (token) => {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.exp * 1000 < Date.now();
+    } catch (e) {
+      return true;
+    }
+  };
+
   // Effect to load from localStorage on initial mount
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem('user');
       const storedToken = localStorage.getItem('token');
-      if (storedUser) setUser(JSON.parse(storedUser));
-      if (storedToken) setToken(storedToken);
+      
+      if (storedToken && !isTokenExpired(storedToken)) {
+        if (storedUser) setUser(JSON.parse(storedUser));
+        setToken(storedToken);
+      } else {
+        // Token invalid or expired
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+      }
     } catch (error) {
       console.error("Failed to load auth from localStorage", error);
-      // Clear invalid storage if parsing fails
       localStorage.removeItem('user');
       localStorage.removeItem('token');
     } finally {

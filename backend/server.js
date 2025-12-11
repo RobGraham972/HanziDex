@@ -20,6 +20,11 @@ const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const path = require('path');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { exec } = require('child_process');
+const util = require('util');
+const execPromise = util.promisify(exec);
+
 let fsrsLib = null;
 async function initFsrs() {
     try {
@@ -46,8 +51,26 @@ const jwtSecret = process.env.JWT_SECRET;
 
 // Middleware
 app.use(express.json());
+
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.FRONTEND_URL // e.g. https://robert-james-graham.co.uk
+].filter(Boolean);
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'], // frontend dev ports
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    // Optional: Allow all vercel preview deployments
+    if (origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'), false);
+  }
 }));
 
 // Serve stroke/data files under /data
@@ -84,9 +107,14 @@ async function updateItemStatus(client, userId, itemId, newStatus) {
 
 const DEFAULT_CHARACTER_SKILLS = [
     { code: 'recognition', label: 'Character Recognition' },
-    { code: 'meaning', label: 'Meaning Recall' },
-    { code: 'pinyin', label: 'Pinyin Recall' },
     { code: 'writing', label: 'Character Writing' },
+    { code: 'pronunciation', label: 'Pronunciation' },
+    { code: 'listening', label: 'Listening Comprehension' },
+    { code: 'meaning', label: 'Meaning' },
+    { code: 'usage', label: 'Usage & Grammar' },
+    { code: 'culture', label: 'Cultural & Pragmatic Understanding' },
+    { code: 'etymology', label: 'Etymology & Character Logic' },
+    { code: 'orthography', label: 'Orthographic Awareness' },
 ];
 
 const DEFAULT_WORD_SKILLS = [
@@ -140,9 +168,18 @@ async function ensureSkillsSchema() {
                 rating_value INTEGER NOT NULL,    -- 1..4
                 duration_ms INTEGER,
                 experiment_id TEXT,
+                scheduled_due_at TIMESTAMPTZ,
+                stability_after DOUBLE PRECISION,
+                difficulty_after DOUBLE PRECISION,
                 PRIMARY KEY (user_id, item_id, skill_code, reviewed_at)
             );
         `);
+        
+        // Ensure columns exist for existing tables
+        await client.query(`ALTER TABLE user_item_skill_reviews ADD COLUMN IF NOT EXISTS scheduled_due_at TIMESTAMPTZ`);
+        await client.query(`ALTER TABLE user_item_skill_reviews ADD COLUMN IF NOT EXISTS stability_after DOUBLE PRECISION`);
+        await client.query(`ALTER TABLE user_item_skill_reviews ADD COLUMN IF NOT EXISTS difficulty_after DOUBLE PRECISION`);
+
         await client.query(`CREATE INDEX IF NOT EXISTS idx_reviews_user_time ON user_item_skill_reviews(user_id, reviewed_at)`);
         await client.query(`CREATE INDEX IF NOT EXISTS idx_reviews_user_item_skill ON user_item_skill_reviews(user_id, item_id, skill_code)`);
         await client.query(`CREATE INDEX IF NOT EXISTS idx_progress_user_due ON user_item_skill_progress(user_id, due_at)`);
@@ -169,6 +206,21 @@ async function ensureSkillsSchema() {
         await client.query(`ALTER TABLE user_options ADD COLUMN IF NOT EXISTS nudges_enabled BOOLEAN NOT NULL DEFAULT TRUE`);
         await client.query(`ALTER TABLE user_options ADD COLUMN IF NOT EXISTS experiment_id TEXT`);
         await client.query(`ALTER TABLE user_item_skill_reviews ADD COLUMN IF NOT EXISTS experiment_id TEXT`);
+
+        // Generated Examples Table
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS user_item_examples (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                item_id INTEGER NOT NULL,
+                sentence TEXT NOT NULL,
+                pinyin TEXT,
+                english TEXT,
+                new_word_id INTEGER,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
+        `);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_examples_user_item ON user_item_examples(user_id, item_id)`);
 
         // Seed default skills (characters, words, radicals)
         const allSkills = [
@@ -218,9 +270,9 @@ function computeStatus(nowMs, dueAtMs, level) {
 function mapRating(input) {
     const s = String(input || '').toLowerCase();
     if (s === 'again') return { label: 'again', value: 1 };
-    if (s === 'hard') return { label: 'hard', value: 2 };
-    if (s === 'good') return { label: 'good', value: 3 };
-    if (s === 'easy') return { label: 'easy', value: 4 };
+    if (s === 'hard' ) return { label: 'hard' , value: 2 };
+    if (s === 'good' ) return { label: 'good' , value: 3 };
+    if (s === 'easy' ) return { label: 'easy' , value: 4 };
     // Back-compat: map success/fail
     if (s === 'success') return { label: 'good', value: 3 };
     if (s === 'fail') return { label: 'again', value: 1 };
@@ -367,6 +419,36 @@ async function scheduleWithFsrsOrFallback({ userId, itemId, skillCode, ratingLab
 // ------------------------------
 // Training Queue
 // ------------------------------
+function buildCard(r) {
+    const value = r.value;
+    const pinyin = r.display_pinyin || null;
+    const english = r.english_definition || null;
+    const kinds = r.kinds || [];
+    const isWord = Array.isArray(kinds) && kinds.includes('word');
+    const isCharacter = Array.isArray(kinds) && kinds.includes('character');
+    const isRadical = Array.isArray(kinds) && kinds.includes('radical');
+
+    const basic = (front, back) => ({ card_type: 'basic', card_front: String(front || ''), card_back: String(back || '') });
+    switch (r.skill_code) {
+        case 'recognition':
+        case 'word_recognition':
+        case 'radical_recognition':
+            return basic(value, [pinyin, english].filter(Boolean).join(' · '));
+        case 'meaning':
+        case 'word_meaning':
+            return basic(english || 'Meaning?', [value, pinyin].filter(Boolean).join(' · '));
+        case 'pinyin':
+            return basic(value, pinyin || '');
+        case 'writing':
+            return basic(`${value}`, [pinyin, english].filter(Boolean).join(' · '));
+        default:
+            return basic(value, [pinyin, english].filter(Boolean).join(' · '));
+    }
+}
+
+// ------------------------------
+// Training Queue
+// ------------------------------
 app.get('/api/training/queue', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     try {
@@ -419,32 +501,6 @@ app.get('/api/training/queue', authenticateToken, async (req, res) => {
         const newIntroducedToday = newTodayRes.rows[0]?.cnt ?? 0;
 
         const now = Date.now();
-        function buildCard(r) {
-            const value = r.value;
-            const pinyin = r.display_pinyin || null;
-            const english = r.english_definition || null;
-            const kinds = r.kinds || [];
-            const isWord = Array.isArray(kinds) && kinds.includes('word');
-            const isCharacter = Array.isArray(kinds) && kinds.includes('character');
-            const isRadical = Array.isArray(kinds) && kinds.includes('radical');
-
-            const basic = (front, back) => ({ card_type: 'basic', card_front: String(front || ''), card_back: String(back || '') });
-            switch (r.skill_code) {
-                case 'recognition':
-                case 'word_recognition':
-                case 'radical_recognition':
-                    return basic(value, [pinyin, english].filter(Boolean).join(' · '));
-                case 'meaning':
-                case 'word_meaning':
-                    return basic(english || 'Meaning?', [value, pinyin].filter(Boolean).join(' · '));
-                case 'pinyin':
-                    return basic(value, pinyin || '');
-                case 'writing':
-                    return basic(`${value}`, [pinyin, english].filter(Boolean).join(' · '));
-                default:
-                    return basic(value, [pinyin, english].filter(Boolean).join(' · '));
-            }
-        }
 
         const entries = rows.rows.map(r => {
             const R = computeRetrievability(r);
@@ -779,6 +835,123 @@ app.get('/api/stats/daily', authenticateToken, async (req, res) => {
     }
 });
 
+// Get skills for a specific item
+app.get('/api/items/:itemId/skills', authenticateToken, async (req, res) => {
+    const userId = req.user.id;
+    const itemId = parseInt(req.params.itemId, 10);
+    if (!Number.isFinite(itemId)) return res.status(400).json({ message: 'Invalid item id' });
+
+    const client = await pool.connect();
+    try {
+        // Ensure skills exist for this item (if discovered)
+        const itemRes = await client.query('SELECT value, kinds, display_pinyin, english_definition, status FROM items i JOIN user_item_progress uip ON i.id = uip.item_id WHERE i.id = $1 AND uip.user_id = $2', [itemId, userId]);
+        if (itemRes.rows.length > 0 && itemRes.rows[0].status === 'DISCOVERED') {
+             await seedSkillsForItemIfMissing(client, userId, itemId, itemRes.rows[0].kinds);
+        }
+        
+        const itemData = itemRes.rows[0] || {};
+
+        const rows = await client.query(`
+            SELECT uisp.skill_code, uisp.level, uisp.last_trained_at, uisp.due_at, uisp.stability, uisp.difficulty, uisp.suspended,
+                   s.label
+            FROM user_item_skill_progress uisp
+            JOIN skills s ON s.code = uisp.skill_code
+            WHERE uisp.user_id = $1 AND uisp.item_id = $2
+            ORDER BY uisp.skill_code
+        `, [userId, itemId]);
+
+        const now = Date.now();
+        const skills = rows.rows.map(r => {
+            const R = computeRetrievability(r);
+            const dueMs = r.due_at ? new Date(r.due_at).getTime() : null;
+            const status = computeStatus(now, dueMs, r.level || 1);
+            
+            // Construct card info
+            const cardInfo = buildCard({
+                ...r,
+                value: itemData.value,
+                kinds: itemData.kinds,
+                display_pinyin: itemData.display_pinyin,
+                english_definition: itemData.english_definition
+            });
+
+            return {
+                skill_code: r.skill_code,
+                label: r.label,
+                level: r.level,
+                last_trained_at: r.last_trained_at,
+                due_at: r.due_at,
+                stability: r.stability,
+                difficulty: r.difficulty,
+                suspended: r.suspended,
+                retrievability: R,
+                status,
+                ...cardInfo
+            };
+        });
+        res.json(skills);
+    } catch (err) {
+        console.error('Error fetching item skills:', err.stack);
+        res.status(500).json({ message: 'Server Error fetching item skills' });
+    } finally {
+        client.release();
+    }
+});
+
+// Record a training event (review)
+app.post('/api/items/:itemId/skills/:skillCode/train', authenticateToken, async (req, res) => {
+    const userId = req.user.id;
+    const itemId = parseInt(req.params.itemId, 10);
+    const skillCode = req.params.skillCode;
+    const { rating } = req.body; // 'again', 'hard', 'good', 'easy'
+
+    if (!Number.isFinite(itemId)) return res.status(400).json({ message: 'Invalid item id' });
+    if (!rating) return res.status(400).json({ message: 'Rating is required' });
+
+    const ratingMap = { 'again': 1, 'hard': 2, 'good': 3, 'easy': 4 };
+    const ratingValue = ratingMap[rating] || 3;
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        const now = new Date();
+        
+        // Calculate new schedule
+        const { stability, difficulty, dueAt, nextLevel } = await scheduleWithFsrsOrFallback({
+            userId, itemId, skillCode, ratingLabel: rating, now
+        });
+
+        // Update progress
+        await client.query(`
+            UPDATE user_item_skill_progress
+            SET 
+                last_trained_at = $1,
+                due_at = $2,
+                stability = $3,
+                difficulty = $4,
+                level = COALESCE($5, level)
+            WHERE user_id = $6 AND item_id = $7 AND skill_code = $8
+        `, [now, dueAt, stability, difficulty, nextLevel, userId, itemId, skillCode]);
+
+        // Log review
+        await client.query(`
+            INSERT INTO user_item_skill_reviews (user_id, item_id, skill_code, rating_label, rating_value, reviewed_at, scheduled_due_at, stability_after, difficulty_after)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `, [userId, itemId, skillCode, rating, ratingValue, now, dueAt, stability, difficulty]);
+
+        await client.query('COMMIT');
+        res.json({ message: 'Training recorded', dueAt, stability, difficulty });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Error recording training:', err.stack);
+        res.status(500).json({ message: 'Server Error recording training' });
+    } finally {
+        client.release();
+    }
+});
+
 // Suspend/unsuspend a skill (leech management)
 app.post('/api/items/:itemId/skills/:skillCode/suspend', authenticateToken, async (req, res) => {
     const userId = req.user.id;
@@ -994,10 +1167,10 @@ app.post('/api/reviews/batch', authenticateToken, async (req, res) => {
 
             // Ensure progress row exists
             await client.query(
-                `INSERT INTO user_item_skill_progress (user_id, item_id, skill_code, level, due_at)
-                 VALUES ($1, $2, $3, 1, NOW())
-                 ON CONFLICT (user_id, item_id, skill_code) DO NOTHING`,
-                [userId, itemId, skillCode]
+                `INSERT INTO user_item_progress (user_id, item_id, status)
+                 VALUES ($1, $2, 'LOCKED')
+                 ON CONFLICT (user_id, item_id) DO NOTHING`,
+                [userId, itemId]
             );
 
             await client.query(
@@ -1210,7 +1383,7 @@ app.post('/login', async (req, res) => {
         const token = jwt.sign(
             { id: user.id, username: user.username },
             jwtSecret,
-            { expiresIn: '12h' }
+            { expiresIn: '30d' }
         );
 
         res.status(200).json({ message: 'Logged in successfully!', token: token, user: { id: user.id, username: user.username } });
@@ -1504,235 +1677,517 @@ app.post('/api/discover', authenticateToken, async (req, res) => {
     }
 });
 
-// ----------------------------------------------------
-// Skills API
-// ----------------------------------------------------
+// ------------------------------
+// Unified Search Endpoint
+// ------------------------------
+app.get('/api/search-items', authenticateToken, async (req, res) => {
+    const userId = req.user.id;
+    const { q } = req.query;
+    
+    if (!q || q.trim().length === 0) {
+        return res.json([]);
+    }
 
-// Fetch skills for a specific item for current user
-app.get('/api/items/:itemId/skills', authenticateToken, async (req, res) => {
+    const query = q.trim();
+    // Simple fuzzy search on value, pinyin, or english
+    // We limit to 20 results
+    try {
+        const result = await pool.query(`
+            SELECT i.id, i.value, i.pinyin, i.english_definition, i.hsk_level,
+                   i.components, i.radicals_contained, i.kinds, i.stroke_count, i.display_pinyin,
+                   CASE WHEN uip.status = 'DISCOVERED' THEN true ELSE false END as is_discovered,
+                   uip.status as discovery_status
+            FROM items i
+            LEFT JOIN user_item_progress uip ON i.id = uip.item_id AND uip.user_id = $1
+            WHERE i.value ILIKE '%' || $2 || '%'
+               OR i.pinyin ILIKE '%' || $2 || '%'
+               OR i.english_definition ILIKE '%' || $2 || '%'
+            ORDER BY 
+              -- 1. Exact Match on Value or Pinyin
+              CASE WHEN i.value = $2 OR i.pinyin ILIKE $2 THEN 0 ELSE 1 END,
+              
+              -- 2. Whole word match in English Definition (using regex word boundaries)
+              CASE WHEN i.english_definition ~* ('\\y' || $2 || '\\y') THEN 0 ELSE 1 END,
+
+              -- 3. Starts with Value (Hanzi)
+              CASE WHEN i.value LIKE $2 || '%' THEN 0 ELSE 1 END,
+
+              -- 4. HSK Level (lower is more likely relevant for learners)
+              COALESCE(i.hsk_level, 99) ASC,
+              
+              -- 5. Length of Value (shorter is often more primary/fundamental)
+              LENGTH(i.value) ASC,
+
+              -- 6. Match at start of English Definition
+              CASE WHEN i.english_definition ILIKE $2 || '%' THEN 0 ELSE 1 END,
+
+              -- 7. Tie breaker
+              i.id ASC
+            LIMIT 50
+        `, [userId, query]);
+        
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error searching items:', err);
+        res.status(500).json({ message: 'Search failed' });
+    }
+});
+
+// ------------------------------
+// Examples System
+// ------------------------------
+
+// Get examples for an item
+app.get('/api/items/:itemId/examples', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     const itemId = parseInt(req.params.itemId, 10);
-    if (!Number.isFinite(itemId)) {
-        return res.status(400).json({ message: 'Invalid item id' });
+    if (!Number.isFinite(itemId)) return res.status(400).json({ message: 'Invalid item id' });
+
+    try {
+        const result = await pool.query(`
+            SELECT e.id, e.sentence, e.pinyin, e.english, e.new_word_id, e.created_at,
+                   i.value as new_word_value, uip.status as new_word_status
+            FROM user_item_examples e
+            LEFT JOIN items i ON i.id = e.new_word_id
+            LEFT JOIN user_item_progress uip ON (uip.item_id = i.id AND uip.user_id = $1)
+            WHERE e.user_id = $1 AND e.item_id = $2
+            ORDER BY e.created_at DESC
+        `, [userId, itemId]);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching examples:', err);
+        res.status(500).json({ message: 'Server Error fetching examples' });
     }
+});
+
+// Generate a new example
+app.post('/api/items/:itemId/examples/generate', authenticateToken, async (req, res) => {
+    const userId = req.user.id;
+    const itemId = parseInt(req.params.itemId, 10);
+    const { include_words } = req.body; // optional array of strings
+    
+    if (!Number.isFinite(itemId)) return res.status(400).json({ message: 'Invalid item id' });
+    if (!process.env.GEMINI_API_KEY) return res.status(503).json({ message: 'AI service not configured (missing API key)' });
+
+    const client = await pool.connect();
+    try {
+        // 1. Get target item
+        const targetRes = await client.query('SELECT value, english_definition FROM items WHERE id = $1', [itemId]);
+        if (targetRes.rows.length === 0) return res.status(404).json({ message: 'Item not found' });
+        const targetItem = targetRes.rows[0];
+
+        // 2. Get user's discovered vocabulary (limit to avoid token overflow, prioritize recent/frequent?)
+        // For now, let's fetch all discovered characters/words.
+        const vocabRes = await client.query(`
+            SELECT i.value 
+            FROM items i
+            JOIN user_item_progress uip ON i.id = uip.item_id
+            WHERE uip.user_id = $1 AND uip.status = 'DISCOVERED'
+        `, [userId]);
+        const knownWords = vocabRes.rows.map(r => r.value);
+        
+        // 3. Prepare prompt
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        // Use gemini-pro as a safe default
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        
+        const systemPrompt = `You are a helpful Chinese tutor. 
+        Your task is to generate a simple Chinese sentence using the target word provided.
+        Constraint 1: You must STRICTLY use only the words from the "Known Words" list provided below.
+        Constraint 2: If it is impossible to form a natural sentence using only known words, you may introduce EXACTLY ONE new word.
+        Constraint 3: If the user provided "Include Words", try to include them if they are in the Known Words list.
+        
+        Return ONLY a JSON object with this structure:
+        {
+          "sentence": "The Chinese sentence",
+          "pinyin": "Pinyin with tone marks",
+          "english": "English translation",
+          "new_word": "The single new word used (or null if none)",
+          "new_word_english": "English definition of the new word (or null if none)"
+        }`;
+
+        const userPrompt = `Target Word: ${targetItem.value} (${targetItem.english_definition})
+        Include Words: ${Array.isArray(include_words) ? include_words.join(', ') : 'None'}
+        Known Words: ${knownWords.join(', ')}
+        
+        Generate a sentence.`;
+
+        const resultGen = await model.generateContent(systemPrompt + "\n\n" + userPrompt);
+        const response = await resultGen.response;
+        let content = response.text();
+        
+        // Clean up markdown code blocks if present
+        content = content.replace(/```json\n?|\n?```/g, '').trim();
+
+        let result;
+        try {
+            result = JSON.parse(content);
+        } catch (e) {
+            console.error("Failed to parse AI response", content);
+            return res.status(500).json({ message: 'AI response error' });
+        }
+
+        // 4. Handle new word logic
+        let newWordId = null;
+        if (result.new_word) {
+            // Check if this new word exists in our DB
+            const nwRes = await client.query('SELECT id FROM items WHERE value = $1', [result.new_word]);
+            if (nwRes.rows.length > 0) {
+                newWordId = nwRes.rows[0].id;
+                // Ensure it's discoverable if not already
+                await client.query(`
+                    INSERT INTO user_item_progress (user_id, item_id, status)
+                    VALUES ($1, $2, 'DISCOVERABLE')
+                    ON CONFLICT (user_id, item_id) DO UPDATE 
+                    SET status = CASE WHEN user_item_progress.status = 'LOCKED' THEN 'DISCOVERABLE' ELSE user_item_progress.status END
+                `, [userId, newWordId]);
+            }
+        }
+
+        // 5. Save example
+        const insertRes = await client.query(`
+            INSERT INTO user_item_examples (user_id, item_id, sentence, pinyin, english, new_word_id)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id, sentence, pinyin, english, new_word_id, created_at
+        `, [userId, itemId, result.sentence, result.pinyin, result.english, newWordId]);
+
+        const saved = insertRes.rows[0];
+        
+        // Return with new word details if applicable
+        let newWordDetails = null;
+        if (newWordId) {
+            newWordDetails = {
+                id: newWordId,
+                value: result.new_word,
+                status: 'DISCOVERABLE' // We just ensured it's at least discoverable
+            };
+        }
+
+        res.json({
+            ...saved,
+            new_word_value: result.new_word,
+            new_word_status: newWordDetails ? newWordDetails.status : null
+        });
+
+    } catch (err) {
+        console.error('Error generating example:', err);
+        if (err.status === 429 || err.code === 'insufficient_quota') {
+            return res.status(429).json({ message: 'OpenAI Quota Exceeded. Please check your billing details.' });
+        }
+        res.status(500).json({ message: 'Server Error generating example' });
+    } finally {
+        client.release();
+    }
+});
+
+// ------------------------------
+// Collector's Book System
+// ------------------------------
+
+// Get all items for a specific HSK level with user status
+app.get('/api/books/hsk/:level', authenticateToken, async (req, res) => {
+    const userId = req.user.id;
+    const levelParam = req.params.level;
+    
+    try {
+        let query;
+        let params;
+
+        if (levelParam === 'custom') {
+             query = `
+                SELECT 
+                    i.id, i.value, i.pinyin, i.english_definition, i.kinds, i.type, i.stroke_count, i.hsk_level,
+                    i.components, i.radicals_contained, i.display_pinyin,
+                    uip.status
+                FROM items i
+                JOIN user_item_progress uip ON i.id = uip.item_id AND uip.user_id = $1
+                WHERE i.hsk_level = 0
+                  AND uip.status IN ('DISCOVERED', 'DISCOVERABLE')
+                ORDER BY i.id ASC
+            `;
+            params = [userId];
+        } else {
+            const level = parseInt(levelParam, 10);
+            if (!Number.isFinite(level)) return res.status(400).json({ message: 'Invalid level' });
+
+            query = `
+                SELECT 
+                    i.id, i.value, i.pinyin, i.english_definition, i.kinds, i.type, i.stroke_count, i.hsk_level,
+                    i.components, i.radicals_contained, i.display_pinyin,
+                    COALESCE(uip.status, 'LOCKED') as status
+                FROM items i
+                LEFT JOIN user_item_progress uip ON i.id = uip.item_id AND uip.user_id = $1
+                WHERE i.hsk_level = $2
+                ORDER BY i.id ASC
+            `;
+            params = [userId, level];
+
+            // Special handling for HSK 7-9
+            if (level === 7) {
+                query = `
+                    SELECT 
+                        i.id, i.value, i.pinyin, i.english_definition, i.kinds, i.stroke_count, i.hsk_level,
+                        i.components, i.radicals_contained, i.display_pinyin,
+                        COALESCE(uip.status, 'LOCKED') as status
+                    FROM items i
+                    LEFT JOIN user_item_progress uip ON i.id = uip.item_id AND uip.user_id = $1
+                    WHERE i.hsk_level >= 7
+                    ORDER BY i.id ASC
+                `;
+                params = [userId];
+            }
+        }
+
+        const result = await pool.query(query, params);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching book level:', err);
+        res.status(500).json({ message: 'Server Error fetching book level' });
+    }
+});
+
+// Add custom word
+app.post('/api/items/custom', authenticateToken, async (req, res) => {
+    const userId = req.user.id;
+    const { word, english_definition } = req.body;
+
+    if (!word || !word.trim()) return res.status(400).json({ message: 'Word is required' });
+    const value = word.trim();
+
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
 
-        // Get kinds for the item to decide which skills to seed
-        const itemRes = await client.query('SELECT kinds FROM items WHERE id = $1', [itemId]);
+        // 1. Check if exists
+        const existing = await client.query('SELECT * FROM items WHERE value = $1', [value]);
+        let itemId;
+        let itemKinds;
+
+        if (existing.rows.length > 0) {
+            itemId = existing.rows[0].id;
+            itemKinds = existing.rows[0].kinds;
+            
+            // Ensure discovered
+            await client.query(`
+                INSERT INTO user_item_progress (user_id, item_id, status)
+                VALUES ($1, $2, 'DISCOVERED')
+                ON CONFLICT (user_id, item_id) DO UPDATE SET status = 'DISCOVERED'
+            `, [userId, itemId]);
+            
+            await seedSkillsForItemIfMissing(client, userId, itemId, itemKinds);
+        } else {
+            // 2. Create new item
+            // Check characters for stroke count
+            const chars = Array.from(value);
+            let totalStrokes = 0;
+            
+            for (const c of chars) {
+                const cRes = await client.query("SELECT stroke_count FROM items WHERE value = $1 AND 'character' = ANY(kinds)", [c]);
+                if (cRes.rows.length > 0 && cRes.rows[0].stroke_count) {
+                    totalStrokes += cRes.rows[0].stroke_count;
+                }
+            }
+
+            // Use Python script for Pinyin, User provided definition
+            if (!english_definition || !english_definition.trim()) {
+                 await client.query('ROLLBACK');
+                 return res.status(400).json({ message: 'English definition is required' });
+            }
+
+            let pinyinStr = '';
+            try {
+                // Call python script
+                // Escape the value to prevent command injection (basic)
+                const safeValue = value.replace(/"/g, '\\"');
+                const scriptPath = path.join(__dirname, 'pinyin_util.py');
+                const { stdout, stderr } = await execPromise(`python "${scriptPath}" "${safeValue}"`);
+                
+                if (stderr) {
+                    console.error('Python stderr:', stderr);
+                }
+                
+                const pyResult = JSON.parse(stdout);
+                if (pyResult.error) {
+                    throw new Error(pyResult.error);
+                }
+                pinyinStr = pyResult.pinyin;
+                
+            } catch (pyErr) {
+                console.error('Pinyin generation failed:', pyErr);
+                await client.query('ROLLBACK');
+                return res.status(500).json({ message: 'Failed to generate pinyin' });
+            }
+
+            // Insert Item
+            const insertRes = await client.query(`
+                INSERT INTO items (value, type, kinds, pinyin, display_pinyin, english_definition, components, constituent_items, stroke_count, hsk_level)
+                VALUES ($1, 'word', $2, $3, $3, $4, $5, $5, $6, 0)
+                RETURNING id
+            `, [value, ['word'], pinyinStr, english_definition, chars, totalStrokes || null]);
+            
+            itemId = insertRes.rows[0].id;
+            itemKinds = ['word'];
+
+            // Discover
+            await client.query(`
+                INSERT INTO user_item_progress (user_id, item_id, status)
+                VALUES ($1, $2, 'DISCOVERED')
+            `, [userId, itemId]);
+
+            await seedSkillsForItemIfMissing(client, userId, itemId, itemKinds);
+        }
+
+        await client.query('COMMIT');
+        
+        // Fetch full details to return
+        const finalRes = await client.query(`
+            SELECT i.*, uip.status 
+            FROM items i
+            JOIN user_item_progress uip ON i.id = uip.item_id
+            WHERE i.id = $1 AND uip.user_id = $2
+        `, [itemId, userId]);
+
+        res.json(finalRes.rows[0]);
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error(err);
+        res.status(500).json({ message: 'Server error adding word' });
+    } finally {
+        client.release();
+    }
+});
+
+// Update item (custom word)
+app.put('/api/items/:itemId', authenticateToken, async (req, res) => {
+    const userId = req.user.id;
+    const itemId = req.params.itemId;
+    const { word, english_definition } = req.body;
+
+    if (!word || !word.trim()) return res.status(400).json({ message: 'Word is required' });
+    const value = word.trim();
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        const itemRes = await client.query('SELECT * FROM items WHERE id = $1', [itemId]);
         if (itemRes.rows.length === 0) {
             await client.query('ROLLBACK');
             return res.status(404).json({ message: 'Item not found' });
         }
-        const kinds = itemRes.rows[0].kinds;
+        const currentItem = itemRes.rows[0];
 
-        // Ensure the user has DISCOVERED this item
-        const statusRes = await client.query(
-            `SELECT status FROM user_item_progress WHERE user_id = $1 AND item_id = $2`,
-            [userId, itemId]
-        );
-        if (statusRes.rows.length === 0 || statusRes.rows[0].status !== 'DISCOVERED') {
-            await client.query('ROLLBACK');
-            return res.status(403).json({ message: 'Skills available only for discovered items.' });
+        // If value changed, we need to regenerate pinyin and strokes
+        let pinyinStr = currentItem.pinyin;
+        let totalStrokes = currentItem.stroke_count;
+        let chars = currentItem.constituent_items;
+
+        if (value !== currentItem.value) {
+             // Check if new value already exists (conflict)
+             const existing = await client.query('SELECT id FROM items WHERE value = $1 AND id != $2', [value, itemId]);
+             if (existing.rows.length > 0) {
+                 await client.query('ROLLBACK');
+                 return res.status(409).json({ message: 'Word already exists' });
+             }
+
+             // Regenerate Pinyin
+             const safeValue = value.replace(/"/g, '\\"');
+             const scriptPath = path.join(__dirname, 'pinyin_util.py');
+             const { stdout, stderr } = await execPromise(`python "${scriptPath}" "${safeValue}"`);
+             if (stderr) console.error('Python stderr:', stderr);
+             const pyResult = JSON.parse(stdout);
+             if (pyResult.error) throw new Error(pyResult.error);
+             pinyinStr = pyResult.pinyin;
+
+             // Recalculate strokes
+             chars = Array.from(value);
+             totalStrokes = 0;
+             for (const c of chars) {
+                const cRes = await client.query("SELECT stroke_count FROM items WHERE value = $1 AND 'character' = ANY(kinds)", [c]);
+                if (cRes.rows.length > 0 && cRes.rows[0].stroke_count) {
+                    totalStrokes += cRes.rows[0].stroke_count;
+                }
+            }
         }
 
-        await seedSkillsForItemIfMissing(client, userId, itemId, kinds);
-
-        const rowsRes = await client.query(
-            `SELECT uisp.user_id, uisp.item_id, uisp.skill_code, uisp.level, uisp.last_trained_at, uisp.due_at, uisp.stability, uisp.difficulty, s.label
-             FROM user_item_skill_progress uisp
-             JOIN skills s ON s.code = uisp.skill_code
-             WHERE uisp.user_id = $1 AND uisp.item_id = $2
-             ORDER BY uisp.skill_code`,
-            [userId, itemId]
-        );
+        await client.query(`
+            UPDATE items 
+            SET value = $1, english_definition = $2, pinyin = $3, display_pinyin = $3, 
+                constituent_items = $4, components = $4, stroke_count = $5
+            WHERE id = $6
+        `, [value, english_definition, pinyinStr, chars, totalStrokes || null, itemId]);
 
         await client.query('COMMIT');
+        
+        // Fetch full details to return (including status from user_item_progress)
+        const finalRes = await client.query(`
+            SELECT i.*, uip.status 
+            FROM items i
+            JOIN user_item_progress uip ON i.id = uip.item_id
+            WHERE i.id = $1 AND uip.user_id = $2
+        `, [itemId, userId]);
 
-        const now = Date.now();
-        const result = rowsRes.rows.map(r => {
-            const dueMs = r.due_at ? new Date(r.due_at).getTime() : null;
-            const status = computeStatus(now, dueMs, r.level || 1);
-            const retrievability = computeRetrievability(r);
-            const greenUntilAt = r.due_at ? new Date(r.due_at) : null;
-            const redAt = r.due_at ? new Date(dueMs + graceForLevelMs(r.level || 1)) : null;
-            return {
-                skill_code: r.skill_code,
-                label: rowsRes.rows.find(x => x.skill_code === r.skill_code)?.label || r.skill_code,
-                level: r.level,
-                due_at: r.due_at,
-                last_trained_at: r.last_trained_at,
-                status,
-                retrievability,
-                stability: r.stability ?? null,
-                difficulty: r.difficulty ?? null,
-                green_until_at: greenUntilAt,
-                red_at: redAt,
-            };
-        });
+        res.json(finalRes.rows[0]);
 
-        res.json(result);
     } catch (err) {
         await client.query('ROLLBACK');
-        console.error('Error fetching skills:', err.stack);
-        res.status(500).json({ message: 'Server Error fetching skills' });
+        console.error(err);
+        res.status(500).json({ message: 'Server error updating item' });
     } finally {
         client.release();
     }
 });
 
-// Train a specific skill for an item
-app.post('/api/items/:itemId/skills/:skillCode/train', authenticateToken, async (req, res) => {
+// Delete item (custom word)
+app.delete('/api/items/:itemId', authenticateToken, async (req, res) => {
     const userId = req.user.id;
-    const itemId = parseInt(req.params.itemId, 10);
-    const skillCode = req.params.skillCode;
-    const { result, rating: ratingInput, duration_ms } = req.body; // rating: again|hard|good|easy
-
-    if (!Number.isFinite(itemId)) {
-        return res.status(400).json({ message: 'Invalid item id' });
-    }
-    if (!skillCode) {
-        return res.status(400).json({ message: 'Skill code required' });
-    }
+    const itemId = req.params.itemId;
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
 
-        // Ensure the user has DISCOVERED this item before training
-        const statusRes = await client.query(
-            `SELECT status FROM user_item_progress WHERE user_id = $1 AND item_id = $2`,
-            [userId, itemId]
-        );
-        if (statusRes.rows.length === 0 || statusRes.rows[0].status !== 'DISCOVERED') {
+        // Check if item exists and is a custom word (hsk_level = 0)
+        const itemRes = await client.query('SELECT * FROM items WHERE id = $1', [itemId]);
+        if (itemRes.rows.length === 0) {
             await client.query('ROLLBACK');
-            return res.status(403).json({ message: 'Training available only for discovered items.' });
+            return res.status(404).json({ message: 'Item not found' });
         }
+        const item = itemRes.rows[0];
 
-        // Ensure row exists
-        await client.query(
-            `INSERT INTO user_item_skill_progress (user_id, item_id, skill_code, level, due_at)
-             VALUES ($1, $2, $3, 1, NOW())
-             ON CONFLICT (user_id, item_id, skill_code) DO NOTHING`,
-            [userId, itemId, skillCode]
-        );
-
-        // Load current row
-        const curRes = await client.query(
-            `SELECT user_id, item_id, skill_code, level, last_trained_at, due_at
-             FROM user_item_skill_progress
-             WHERE user_id = $1 AND item_id = $2 AND skill_code = $3`,
-            [userId, itemId, skillCode]
-        );
-        if (curRes.rows.length === 0) {
+        if (item.hsk_level !== 0) {
             await client.query('ROLLBACK');
-            return res.status(404).json({ message: 'Skill not found' });
+            return res.status(403).json({ message: 'Cannot delete standard HSK items' });
         }
 
-        let row = { ...curRes.rows[0] };
-        const now = new Date();
-        const rating = mapRating(ratingInput ?? result);
-
-        // Log the review
-        // Attach experiment id if present
-        const exp = await client.query('SELECT experiment_id FROM user_options WHERE user_id = $1', [userId]);
-        const experimentId = exp.rows[0]?.experiment_id ?? null;
-        await client.query(
-            `INSERT INTO user_item_skill_reviews (user_id, item_id, skill_code, reviewed_at, rating_label, rating_value, duration_ms)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-            [userId, itemId, skillCode, now, rating.label, rating.value, duration_ms ?? null]
-        );
-        if (experimentId) {
-            await client.query(
-                `UPDATE user_item_skill_reviews SET experiment_id = $1
-                 WHERE user_id = $2 AND item_id = $3 AND skill_code = $4 AND reviewed_at = $5`,
-                [experimentId, userId, itemId, skillCode, now]
-            );
-        }
-
-        // Try FSRS scheduling
-        const sched = await scheduleWithFsrsOrFallback({ userId, itemId, skillCode, ratingLabel: rating.label, now });
-        let updateQuery, updateParams;
-        if (sched.stability != null || sched.difficulty != null) {
-            // FSRS path: keep level as a coarse display (optional increment on success)
-            const displayLevel = rating.label === 'again' ? Math.max(1, (row.level || 1) - 1)
-                                 : rating.label === 'easy' ? Math.min(60, (row.level || 1) + 2)
-                                 : Math.min(60, (row.level || 1) + 1);
-            updateQuery = `UPDATE user_item_skill_progress
-                           SET level = $1, last_trained_at = $2, due_at = $3, stability = $4, difficulty = $5
-                           WHERE user_id = $6 AND item_id = $7 AND skill_code = $8
-                           RETURNING user_id, item_id, skill_code, level, last_trained_at, due_at, stability, difficulty`;
-            updateParams = [displayLevel, now, sched.dueAt, sched.stability, sched.difficulty, userId, itemId, skillCode];
-        } else {
-            // Fallback path used nextLevel
-            updateQuery = `UPDATE user_item_skill_progress
-                           SET level = $1, last_trained_at = $2, due_at = $3
-                           WHERE user_id = $4 AND item_id = $5 AND skill_code = $6
-                           RETURNING user_id, item_id, skill_code, level, last_trained_at, due_at, stability, difficulty`;
-            updateParams = [sched.nextLevel || row.level || 1, now, sched.dueAt, userId, itemId, skillCode];
-        }
-        const upd = await client.query(updateQuery, updateParams);
-        row = upd.rows[0];
+        // Delete related data
+        // user_item_progress
+        await client.query('DELETE FROM user_item_progress WHERE item_id = $1', [itemId]);
+        // user_item_skills
+        await client.query('DELETE FROM user_item_skill_progress WHERE item_id = $1', [itemId]);
+        // user_item_examples
+        await client.query('DELETE FROM user_item_examples WHERE item_id = $1', [itemId]);
+        // reviews
+        await client.query('DELETE FROM user_item_skill_reviews WHERE item_id = $1', [itemId]);
+        
+        // Finally delete the item itself
+        await client.query('DELETE FROM items WHERE id = $1', [itemId]);
 
         await client.query('COMMIT');
+        res.json({ message: 'Item deleted successfully', id: itemId });
 
-        const status = computeStatus(Date.now(), row.due_at ? new Date(row.due_at).getTime() : null, row.level || 1);
-        return res.json({
-            skill_code: row.skill_code,
-            level: row.level,
-            due_at: row.due_at,
-            status,
-            stability: row.stability ?? null,
-            difficulty: row.difficulty ?? null,
-        });
     } catch (err) {
         await client.query('ROLLBACK');
-        console.error('Error training skill:', err.stack);
-        res.status(500).json({ message: 'Server Error training skill' });
+        console.error(err);
+        res.status(500).json({ message: 'Server error deleting item' });
     } finally {
         client.release();
     }
 });
 
-// ----------------------------------------------------
-// Start the Server only after confirming DB connection
-// ----------------------------------------------------
-async function startServer() {
-    try {
-        const client = await pool.connect();
-        const result = await client.query('SELECT NOW()');
-        console.log('Database connected successfully at:', result.rows[0].now);
-        client.release();
-
-        // Ensure skills schema exists before starting
-        await ensureSkillsSchema();
-        await initFsrs();
-
-        app.listen(port, () => {
-            console.log(`Server running on port ${port}`);
-            if (!fsrsLib) {
-                console.warn('FSRS library not found; using approximate scheduler. Install @open-spaced-repetition/ts-fsrs for full FSRS.');
-            }
-        });
-
-    } catch (err) {
-        console.error('CRITICAL: Initial Database Connection Failed. Server will not start.');
-        console.error(err.stack);
-        process.exit(1); // Exit with a failure code
-    }
-}
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ message: `Not Found: ${req.method} ${req.originalUrl}` });
+app.listen(port, async () => {
+    console.log(`Server running on port ${port}`);
+    await initFsrs();
+    await ensureSkillsSchema();
 });
-
-// Error handler
-app.use((err, req, res, next) => {
-  console.error('API error:', err.stack);
-  const status = err.status || 500;
-  res.status(status).json({ message: err.message || 'Internal Server Error' });
-});
-
-startServer();

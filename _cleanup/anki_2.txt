@@ -1,0 +1,4 @@
+Front	Back
+How is the exponential function, \(\exp(x)\), defined using a series for any real value of \(x\)?	The exponential function is defined by the series \(\exp(x) = e^x = \sum_{n=0}^{\infty} \frac{x^n}{n!} = 1 + x + \frac{x^2}{2!} + \frac{x^3}{3!} + \dots\).
+What formula, known as Pascal's formula, relates binomial coefficients in Pascal's triangle?	Pascal's formula is \(\binom{n+1}{k} = \binom{n}{k-1} + \binom{n}{k}\) for \(1 \le k \le n\).
+What is the formula for the general binomial theorem for \((1 + x)^{\alpha}\) where \(\alpha\) is a real number?	For \(\alpha \in \mathbb{R}\) and \(|x| < 1\), \((1 + x)^{\alpha} = 1 + \alpha x + \frac{\alpha(\alpha-1)}{2!}x^2 + \frac{\alpha(\alpha-1)(\alpha-2)}{3!}x^3 + \dots\).

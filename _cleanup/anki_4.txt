@@ -1,0 +1,15 @@
+What is the definition of the hyperbolic cosine function, \(\cosh(x)\), in terms of the exponential function?	The hyperbolic cosine is defined as \(\cosh(x) = \frac{1}{2}(e^x + e^{-x})\).
+Express the hyperbolic sine function, \(\sinh(x)\), using the exponential function.	The hyperbolic sine is defined as \(\sinh(x) = \frac{1}{2}(e^x - e^{-x})\).
+State the fundamental identity relating \(\cosh^2(x)\) and \(\sinh^2(x)\).	For all \(x \in \mathbb{R}\), the identity is \(\cosh^2(x) - \sinh^2(x) = 1\).
+What is the addition formula for \(\sinh(x+y)\)?	\(\sinh(x+y) = \sinh(x)\cosh(y) + \cosh(x)\sinh(y)\).
+State the addition formula for the hyperbolic cosine function, \(\cosh(x+y)\).	\(\cosh(x+y) = \cosh(x)\cosh(y) + \sinh(x)\sinh(y)\).
+What is the derivative of \(\sinh(x)\) with respect to \(x\)?	\(\frac{d}{dx}(\sinh(x)) = \cosh(x)\).
+Determine the derivative of \(\cosh(x)\) with respect to \(x\).	\(\frac{d}{dx}(\cosh(x)) = \sinh(x)\).
+According to Proposition 2.4, what conditions must a continuous function \(f: (a, b) \to (c, d)\) satisfy to have an inverse function \(g: (c, d) \to (a, b)\)?	The function \(f\) must be strictly increasing or strictly decreasing on the interval \((a, b)\).
+On the unit circle, how are the trigonometric functions \(\cos(x)\) and \(\sin(x)\) defined for an angle \(x\) in radians?	For a point \((u, v)\) on the unit circle corresponding to an angle \(x\), \(\cos(x)\) is the horizontal coordinate \(u\), and \(\sin(x)\) is the vertical coordinate \(v\).
+What is the trigonometric addition formula for \(\sin(x+y)\)?	\(\sin(x+y) = \sin(x)\cos(y) + \cos(x)\sin(y)\).
+State the trigonometric addition formula for \(\cos(x+y)\).	\(\cos(x+y) = \cos(x)\cos(y) - \sin(x)\sin(y)\).
+What is the double angle formula for \(\sin(2x)\)?	\(\sin(2x) = 2\sin(x)\cos(x)\).
+State the primary double angle formula for \(\cos(2x)\).	\(\cos(2x) = \cos^2(x) - \sin^2(x)\).
+Using the Pythagorean identity, express \(\cos(2x)\) solely in terms of \(\cos(x)\).	\(\cos(2x) = 2\cos^2(x) - 1\).
+Using the Pythagorean identity, express \(\cos(2x)\) solely in terms of \(\sin(x)\).	\(\cos(2x) = 1 - 2\sin^2(x)\).
